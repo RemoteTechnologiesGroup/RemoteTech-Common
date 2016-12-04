@@ -252,7 +252,7 @@ namespace RemoteTech.Common
         ///     Get the calling assembly of the function at <paramref name="index" /> in the function stack frame.
         /// </summary>
         /// <param name="index">The index of the function (in the stack frame) from which the assembly should be retrieved.</param>
-        /// <returns>The qualified nae of the assembly if successful, an empty string otherwise.</returns>
+        /// <returns>The qualified name of the assembly if successful, an empty string otherwise.</returns>
         /// <remarks>This function is a index 0, the caller at index 1, etc.</remarks>
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.NoInlining)]
