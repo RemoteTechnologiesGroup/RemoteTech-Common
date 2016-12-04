@@ -1,133 +1,326 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace RemoteTech.Common
 {
     /// <summary>
-    /// Different log levels to log messages for debugging.
+    ///     Logging levels to log messages for debugging. The higher the level, the less is logged.
+    ///     For example, setting the level to <see cref="Error" /> means that only <see cref="Error" /> and
+    ///     <see cref="Critical" /> message are logged.
+    ///     See also <seealso cref="Logging.CurrentLogLevel" /> to set the appropriate level of the logger.
     /// </summary>
-    public enum RemoteTechLogLevel
+    public enum LogLevel
     {
+        /// <summary>Default level: in this state nothing is logged. Can be used to disable the logger.</summary>
+        NotSet,
+
+        /// <summary>Debug level: useful when debugging only.</summary>
+        Debug,
+
+        /// <summary>Information level: can be used to give some feedback.</summary>
         Info,
+
+        /// <summary>Warning level: something went probably wrong but it's not an error per se.</summary>
         Warning,
+
+        /// <summary>Error level: An error occurred but it can be dealt with.</summary>
         Error,
-        Critical,
-        Api,
-        Assembly
-    };
-
-    public static class RemoteTechLog
-    {
-
-        /// <summary>On true the verbose-Methods will notify their messages</summary>
-        private static readonly bool VerboseLogging;
-        /// <summary>debug log list</summary>
-        public static readonly Dictionary<RemoteTechLogLevel, List<string>> RemoteTechLogList = new Dictionary<RemoteTechLogLevel, List<string>>();
-
-        static RemoteTechLog()
-        {
-            VerboseLogging = GameSettings.VERBOSE_DEBUG_LOG;
-
-            #region ON-DEBUGMODE
-#if DEBUG
-            // always set the verboseLogging to true on debug mode
-            VerboseLogging = true;
-
-            // initialize debug list
-            foreach (RTLogLevel lvl in Enum.GetValues(typeof(RTLogLevel)))
-            {
-                RTLogList.Add(lvl, new List<string>());
-            }
-#endif
-            #endregion
-        }
 
         /// <summary>
-        /// Notify a message to the log. In debug mode the message will also be logged 
-        /// to the <paramref name="logLevel"/> list.
+        ///     Critical level: useful only when something went really wrong and can't be fixed (probably leading to a crash
+        ///     state).
         /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="logLevel">Logging level for debugging</param>
-        public static void Notify(string message, RemoteTechLogLevel logLevel = RemoteTechLogLevel.Info)
-        {
-            UnityEngine.Debug.Log("RemoteTech: " + message);
-
-            #region ON-DEBUGMODE
-#if DEBUG
-            NotifyToLogLevel(message, logLevel);
-#endif
-            #endregion
-        }
-
-        /// <summary>
-        /// Notify a message to the log. Replaces each format item on the <paramref name="message"/>
-        /// with the text equivalent of a corresponding objects value from <paramref name="param"/>.
-        /// </summary>
-        /// <param name="message">Message to log with format items</param>
-        /// <param name="param">objects to format</param>
-        public static void Notify(string message, params object[] param)
-        {
-            Notify(string.Format(message, param));
-        }
-
-        /// <summary>
-        /// Notify a message to the log. Replaces each format item on the <paramref name="message"/>
-        /// with the text equivalent of a corresponding objects value from <paramref name="param"/>.
-        /// In debug mode the message will also be logged to the <paramref name="logLevel"/> list.
-        /// </summary>
-        /// <param name="message">Message to log with format items</param>
-        /// <param name="logLevel">Logging level for debugging</param>
-        /// <param name="param">objects to format</param>
-        public static void Notify(string message, RemoteTechLogLevel logLevel = RemoteTechLogLevel.Info, params object[] param)
-        {
-            Notify(string.Format(message, param), logLevel);
-        }
-
-        /// <summary>
-        /// Notify a message to the log only if the VERBOSE_DEBUG_LOG from the KSP settings.cfg
-        /// is set to true. In debug mode the message will also be logged to the
-        /// <paramref name="logLevel"/> list.
-        /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="logLevel">Logging level for debugging</param>
-        public static void Verbose(string message, RemoteTechLogLevel logLevel = RemoteTechLogLevel.Info)
-        {
-            if (VerboseLogging)
-            {
-                Notify(message, logLevel);
-            }
-        }
-
-        /// <summary>
-        /// Notify a message to the log only if the VERBOSE_DEBUG_LOG from the KSP settings.cfg
-        /// is set to true. Replaces each format item on the <paramref name="message"/>
-        /// with the text equivalent of a corresponding objects value from <paramref name="param"/>.
-        /// In debug mode the message will also be logged to the <paramref name="logLevel"/> list.
-        /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="logLevel">Logging level for debugging</param>
-        /// <param name="param">objects to format</param>
-        public static void Verbose(string message, RemoteTechLogLevel logLevel = RemoteTechLogLevel.Info, params object[] param)
-        {
-            Verbose(string.Format(message, param), logLevel);
-        }
-
-        /// <summary>
-        /// Logs the <paramref name="message"/> to the <paramref name="logLevel"/>
-        /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="logLevel">Logging level for debugging</param>
-        private static void NotifyToLogLevel(string message, RemoteTechLogLevel logLevel)
-        {
-            RemoteTechLogList[logLevel].Add(message);
-        }
+        Critical
     }
 
-    public static class RTLogExtenstions
+    /// <summary>
+    ///     Main logging class.
+    /// </summary>
+    public static class Logging
     {
-        public static string ToDebugString<T>(this List<T> list)
+        /// <summary>
+        ///     Log journal used to keep a record of the logged entries with their level. Only active if
+        ///     <see cref="LogJournalActive" /> is true.
+        /// </summary>
+        /// <remarks>Always active when this assembly is compiled in DEBUG mode.</remarks>
+        public static readonly Dictionary<LogLevel, List<string>> LogJournal = new Dictionary<LogLevel, List<string>>();
+
+        /// <summary>
+        ///     Static constructor.
+        /// </summary>
+        static Logging()
         {
-            return "{" + string.Join(",", list.Select(x => x.ToString()).ToArray()) + "}";
+            // initialize LogJournal
+            foreach (LogLevel lvl in Enum.GetValues(typeof(LogLevel)))
+                LogJournal.Add(lvl, new List<string>());
+
+#if DEBUG
+            LogJournalActive = true;
+            LogCallerInfo = true;
+#endif
         }
+
+        /// <summary>
+        ///     Activate or deactivate the <see cref="LogJournal" />.
+        /// </summary>
+        /// <remarks>
+        ///     Depends on <see cref="GameSettings.VERBOSE_DEBUG_LOG" />. Automatically set to true if the assembly if
+        ///     compiled in DEBUG version.
+        /// </remarks>
+        public static bool LogJournalActive { get; set; } = GameSettings.VERBOSE_DEBUG_LOG;
+
+        /// <summary>
+        ///     If true, the name class and namespace of the function calling the logging function is also logged.
+        /// </summary>
+        /// <remarks>Automatically set to true if the assembly is compiled in DEBUG version.</remarks>
+        public static bool LogCallerInfo { get; set; } = false;
+
+        /// <summary>
+        ///     Set or Get the current minimum log level. Any log level function below this level will *not* be logged. Default to
+        ///     <see cref="LogLevel.Debug" />, see also <seealso cref="LogLevel" />.
+        /// </summary>
+        public static LogLevel CurrentLogLevel { get; set; } = LogLevel.Debug;
+
+        /// <summary>
+        ///     Log a string (and optional parameters) to the KSP Log.
+        /// </summary>
+        /// <param name="askedLevel">
+        ///     The logging level that was asked for. See <see cref="LogLevel" /> and
+        ///     <seealso cref="CurrentLogLevel" />.
+        /// </param>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="ex">An exception to log, if any.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        private static void Log(LogLevel askedLevel, string message, Exception ex, params object[] @params)
+        {
+            // nothing is logged if the level is not set.
+            if (CurrentLogLevel == LogLevel.NotSet)
+                return;
+
+            // the level asked for must be equal or greater to the current log level.
+            if (askedLevel < CurrentLogLevel)
+                return;
+
+            LogDelegate logMethod;
+
+            switch (askedLevel)
+            {
+                case LogLevel.NotSet:
+                    return;
+
+                case LogLevel.Debug:
+                    logMethod = UnityEngine.Debug.Log;
+                    break;
+
+                case LogLevel.Info:
+                    goto case LogLevel.Debug;
+
+                case LogLevel.Warning:
+                    logMethod = UnityEngine.Debug.LogWarning;
+                    break;
+
+                case LogLevel.Error:
+                    logMethod = UnityEngine.Debug.LogError;
+                    break;
+
+                case LogLevel.Critical:
+                    goto case LogLevel.Error;
+
+                default:
+                    throw new ArgumentException($"Unknown log level: {askedLevel}");
+            }
+
+            // get caller (note: 0 is GetCallingAssembly, 1 is this function, 2 is one of the log functions [e.g. Logging.Debug()] and 3 is the caller of the log function)
+            var pluginName = GetCallingAssembly(3);
+            var logHeader = $"[{pluginName}] [{askedLevel}]";
+
+            // format message body
+            var logBody = (@params != null) && (@params.Length > 0) ? string.Format(message, @params) : message;
+
+            // log caller information (function name, class and namespace) if flag is active
+            if (LogCallerInfo)
+            {
+                var st = new StackTrace();
+                var method = st.GetFrame(2).GetMethod();
+                logBody += $" [caller: '{method}' in '{method.DeclaringType}']";
+            }
+
+            // do logging with Unity
+            var logString = $"{logHeader}: {logBody}";
+            logMethod(logString);
+
+            // add to journal if journal is active.
+            if (LogJournalActive)
+                LogJournal[askedLevel].Add(logString);
+
+            // use unity logging for exception
+            if (ex != null)
+                UnityEngine.Debug.LogException(ex);
+        }
+
+
+        /*
+         * convenience functions
+         */
+
+        /// <summary>
+        ///     Log a debug message to the Unity Console and KSP log file.
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Debug(string message, params object[] @params)
+        {
+            Log(LogLevel.Debug, message, null, @params);
+        }
+
+        /// <summary>
+        ///     Log an informative message to the Unity Console and KSP log file.
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Info(string message, params object[] @params)
+        {
+            Log(LogLevel.Info, message, null, @params);
+        }
+
+        /// <summary>
+        ///     Log a warning message to the Unity Console and KSP log file.
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Warning(string message, params object[] @params)
+        {
+            Log(LogLevel.Warning, message, null, @params);
+        }
+
+        /// <summary>
+        ///     Log an error message to the Unity Console and KSP log file.
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Error(string message, params object[] @params)
+        {
+            Log(LogLevel.Error, message, null, @params);
+        }
+
+        /// <summary>
+        ///     Log an error message and an exception to the Unity Console and KSP log file.
+        ///     <para>Useful when an exception has been caught and must be logged.</para>
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="ex">An exception.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Error(string message, Exception ex, params object[] @params)
+        {
+            Log(LogLevel.Error, message, ex, @params);
+        }
+
+        /// <summary>
+        ///     Log a critical error message to the Unity Console and KSP log file.
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Critical(string message, params object[] @params)
+        {
+            Log(LogLevel.Critical, message, null, @params);
+        }
+
+        /// <summary>
+        ///     Log a critical error message and an exception to the Unity Console and KSP log file.
+        ///     <para>Useful when an exception has been caught and must be logged.</para>
+        /// </summary>
+        /// <param name="message">A composite format string.</param>
+        /// <param name="ex">An exception.</param>
+        /// <param name="params">Format arguments.</param>
+        /// <remarks>see the MSDN documentation on Composite Formatting.</remarks>
+        public static void Critical(string message, Exception ex, params object[] @params)
+        {
+            Log(LogLevel.Critical, message, ex, @params);
+        }
+
+        /// <summary>
+        ///     Get the calling assembly of the function at <paramref name="index" /> in the function stack frame.
+        /// </summary>
+        /// <param name="index">The index of the function (in the stack frame) from which the assembly should be retrieved.</param>
+        /// <returns>The qualified nae of the assembly if successful, an empty string otherwise.</returns>
+        /// <remarks>This function is a index 0, the caller at index 1, etc.</remarks>
+        [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string GetCallingAssembly(int index)
+        {
+            var st = new StackTrace();
+            var method = st.GetFrame(index).GetMethod();
+            var declaringType = method.DeclaringType;
+            return declaringType?.Module.Name.Split('.')[0] ?? string.Empty;
+        }
+
+        /// <summary>
+        ///     Convenience function: Log a debug message telling a function is entered.
+        /// </summary>
+        [Conditional("DEBUG")]
+        [DebuggerStepThrough]
+        public static void EnterFunction()
+        {
+            var methodName = GetMethodNameInStackFrame(2);
+            Debug($"{methodName}: Entering");
+        }
+
+        /// <summary>
+        ///     Convenience function: Log a debug message telling the function is exited.
+        /// </summary>
+        [Conditional("DEBUG")]
+        [DebuggerStepThrough]
+        public static void LeaveFunction()
+        {
+            var methodName = GetMethodNameInStackFrame(2);
+            Debug($"{methodName}: Leaving");
+        }
+
+        /// <summary>
+        ///     Get the calling method name at <paramref name="index" /> in the stack frame.
+        /// </summary>
+        /// <param name="index">Function location on stack frame.</param>
+        /// <returns>The method name at <paramref name="index" /> in the stack frame.</returns>
+        /// <remarks>This function is a index 0, the caller at index 1, etc.</remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string GetMethodNameInStackFrame(int index)
+        {
+            var st = new StackTrace();
+            var sf = st.GetFrame(index);
+            return sf.GetMethod().Name;
+        }
+
+        /// <summary>
+        ///     Get the whole stack trace leading to a method.
+        /// </summary>
+        /// <returns>The stack trace string.</returns>
+        public static string StackTraceToString()
+        {
+            var sb = new StringBuilder(0x1000);
+            var frames = new StackTrace().GetFrames();
+            if (frames == null)
+                return string.Empty;
+
+            // start at 1 to ignore current method
+            for (var i = 1; i < frames.Length; i++)
+            {
+                var currFrame = frames[i];
+                var method = currFrame.GetMethod();
+                sb.AppendLine($"{method.ReflectedType?.Name ?? string.Empty}:{method.Name}");
+            }
+            return sb.ToString();
+        }
+
+        internal delegate void LogDelegate(string message);
     }
 }
