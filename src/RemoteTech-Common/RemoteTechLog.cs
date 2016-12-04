@@ -155,7 +155,10 @@ namespace RemoteTech.Common
 
             // add to journal if journal is active.
             if (LogJournalActive)
-                LogJournal[askedLevel].Add(logString);
+            {
+                var timedlogString = $"[{TimeString()}] {logString}";
+                LogJournal[askedLevel].Add(timedlogString);
+            }
 
             // use unity logging for exception
             if (ex != null)
@@ -322,5 +325,12 @@ namespace RemoteTech.Common
         }
 
         internal delegate void LogDelegate(string message);
+
+        private static string TimeString(string format = null)
+        {
+            if (string.IsNullOrEmpty(format))
+                format = "HH:mm:ss.fff";
+            return DateTime.Now.ToString(format);
+        }
     }
 }
