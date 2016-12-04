@@ -31,21 +31,26 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\..\KSP_Assemblies\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\KSP_Assemblies\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="UnityEngine">
-      <HintPath>UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\KSP_Assemblies\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>UnityEngine.UI.dll</HintPath>
+      <HintPath>..\..\..\KSP_Assemblies\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonCore.cs" />
     <Compile Include="Interfaces\ISignalProcessor.cs" />
     <Compile Include="RemoteTechLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
