@@ -51,18 +51,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonCore.cs" />
-    <Compile Include="Interfaces\ISignalProcessor.cs" />
+    <Compile Include="Interfaces\IRemoteTechSettings.cs" />
+    <Compile Include="Interfaces\ISignalProcessorUnit.cs" />
     <Compile Include="RangeModels\RootRangeModel.cs" />
     <Compile Include="RangeModels\StandardRangeModel.cs" />
     <Compile Include="RemoteTechLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RtCommNet\RtCommNetScenario.cs" />
+    <Compile Include="Settings\RemoteTechAbstractSettings.cs" />
+    <Compile Include="Utils\GameUtil.cs" />
     <Compile Include="Utils\PathUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Extensions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>$(TargetDir)pdb2mdb.bat
+$(TargetDir)copy.bat</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
