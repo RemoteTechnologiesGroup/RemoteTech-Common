@@ -10,5 +10,11 @@ namespace RemoteTech.Common.Interfaces
         /// Name of the Signal Processor.
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// The vessel using this Signal Processor Unit.
+        /// </summary>
+        Vessel Vessel { get; }
+
     }
 }
