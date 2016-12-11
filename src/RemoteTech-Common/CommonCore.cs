@@ -12,7 +12,7 @@ namespace RemoteTech.Common
     }
 
     [KSPAddon(KSPAddon.Startup.Flight, false)]
-    public class CommonCorFlight : CommonCore
+    public class CommonCoreFlight : CommonCore
     {
         public new void Start()
         {
