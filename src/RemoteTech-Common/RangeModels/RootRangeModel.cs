@@ -38,8 +38,9 @@ namespace RemoteTech.Common.RangeModels
         /// <returns></returns>
         public bool InRange(double aPower, double bPower, double sqrDistance)
         {
-            //TODO implement
-            throw new NotImplementedException();
+            var distance = Math.Sqrt(sqrDistance);
+            var maxRange = GetMaximumRange(aPower, bPower);
+            return (distance <= maxRange) && (distance >= 0.0d) && (maxRange > 0.0d);
         }
     }
 }
