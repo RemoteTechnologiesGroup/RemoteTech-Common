@@ -1,10 +1,10 @@
 ﻿using CommNet;
 using RemoteTech.Common.RangeModels;
 
-namespace RemoteTech.Common.RtCommNet
+namespace RemoteTech.Common.RemoteTechCommNet
 {
     [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR)]
-    public class RtCommNetScenario : CommNetScenario
+    public class RemoteTechCommNetScenario : CommNetScenario
     {
         protected override void Start()
         {
