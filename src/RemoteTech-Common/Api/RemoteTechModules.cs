@@ -6,10 +6,9 @@ namespace RemoteTech.Common.Api
     {
         public const string RemoteTechDelayAssemblyName = "RemoteTech-Delay.dll";
 
-        public static bool IsRemoteTechDelayLoaded()
-        {
-            return AssemblyByName(RemoteTechDelayAssemblyName) != null;
-        }
+        private static readonly Dictionary<string, bool> RemoteTechAssembliesLoadedCache = new Dictionary<string, bool>();
+
+        public static bool RemoteTechDelayAssemblyLoaded => IsRemoteTechAssemblyLoaded(RemoteTechDelayAssemblyName);
 
         internal static AssemblyLoader.LoadedAssembly AssemblyByName(string assemblyName)
         {
@@ -22,6 +21,18 @@ namespace RemoteTech.Common.Api
             }
 
             return null;
+        }
+
+        internal static bool IsRemoteTechAssemblyLoaded(string assemblyName)
+        {
+            bool cache;
+            if (RemoteTechAssembliesLoadedCache.TryGetValue(assemblyName, out cache))
+                return cache;
+
+            var result = AssemblyByName(assemblyName) != null;
+            RemoteTechAssembliesLoadedCache[assemblyName] = result;
+
+            return result;
         }
     }
 }
