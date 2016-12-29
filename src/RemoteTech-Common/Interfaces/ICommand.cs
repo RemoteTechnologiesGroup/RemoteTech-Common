@@ -5,10 +5,10 @@ namespace RemoteTech.Common.Interfaces
     /// <summary>
     ///     Command interface.
     /// </summary>
-    public interface ICommand : IComparable<ICommand>
+    public interface ICommand : IComparable<ICommand>, IConfigNode
     {
         /*
-         * Command fields 
+         * Command Properties 
          */
 
         /// <summary>
@@ -17,19 +17,14 @@ namespace RemoteTech.Common.Interfaces
         Guid CommandId { get; }
 
         /// <summary>
-        /// Base delay for the command.
-        /// </summary>
-        double Delay { get; }
-
-        /// <summary>
         ///     A complete command description.
         /// </summary>
         string Description { get; }
 
         /// <summary>
-        ///     Extra delay added to the current command <see cref="TimeStamp" />.
+        /// Tells whether or not the condition for the command execution is met.
         /// </summary>
-        double ExtraDelay { get; set; }
+        bool IsExecutable { get; }
 
         /// <summary>
         /// The command priority. From 0 (less privileged) to 255 (highest priority).
@@ -45,6 +40,11 @@ namespace RemoteTech.Common.Interfaces
         ///     The time at which the command was enqueued.
         /// </summary>
         double TimeStamp { get; set; }
+
+        /// <summary>
+        ///     The vessel on which the command applies.
+        /// </summary>
+        Vessel Vessel { get; }
 
         /*
          * Command Events
@@ -69,17 +69,5 @@ namespace RemoteTech.Common.Interfaces
         /// </summary>
         /// <returns>true if the command was successfully executed, false otherwise.</returns>
         bool Invoke();
-
-        /// <summary>
-        ///     Load the command.
-        /// </summary>
-        /// <returns>true if the command was successfully loaded, false otherwise.</returns>
-        bool Load();
-
-        /// <summary>
-        ///     Save the command.
-        /// </summary>
-        /// <returns>true if the command was successfully saved, false otherwise.</returns>
-        bool Save();
     }
 }
