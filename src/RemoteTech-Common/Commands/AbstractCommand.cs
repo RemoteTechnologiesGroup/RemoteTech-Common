@@ -4,7 +4,7 @@ using RemoteTech.Common.Utils;
 
 namespace RemoteTech.Common.Commands
 {
-    public abstract class AbstractCommand : ICommand
+    public abstract class AbstractDelayCommand : IDelayCommand
     {
         /// <summary>
         /// Indicates whether or not the command is aborted.
@@ -13,11 +13,15 @@ namespace RemoteTech.Common.Commands
 
         public virtual int CompareTo(ICommand other)
         {
-            // if priorities are equal then the discriminant is the time-stamp, otherwise the priority takes place.
-            return Priority == other.Priority ? TimeStamp.CompareTo(other.TimeStamp) : Priority.CompareTo(other.Priority);
+            return Priority.CompareTo(other.Priority);
         }
 
-        protected AbstractCommand()
+        public virtual int CompareTo(IDelayCommand other)
+        {
+            return PlannedExecutionTime.CompareTo(other.PlannedExecutionTime);
+        }
+
+        protected AbstractDelayCommand()
         {
             CommandId = new Guid();
         }
@@ -30,7 +34,16 @@ namespace RemoteTech.Common.Commands
         /// <summary>
         /// Base delay for the command.
         /// </summary>
-        public virtual double Delay => Math.Max(TimeStamp - TimeUtils.GameTime, 0);
+        public virtual double Delay
+        {
+            get
+            {
+                if (Vessel == null || Vessel.Connection == null)
+                    return 0;
+
+                return Vessel.Connection.SignalDelay;
+            }
+        }
 
         /// <summary>
         ///     A complete command description.
@@ -56,6 +69,16 @@ namespace RemoteTech.Common.Commands
         public virtual double ExtraDelay { get; set; }
 
         /// <summary>
+        /// Tells whether or not the condition for the command execution is met.
+        /// </summary>
+        public virtual bool IsExecutable => (PlannedExecutionTime - TimeUtils.GameTime) <= 0;
+
+        /// <summary>
+        ///     Time at which the command is planned to be executed.
+        /// </summary>
+        public double PlannedExecutionTime => TimeStamp + TotalDelay;
+
+        /// <summary>
         /// The command priority. From 0 (less privileged) to 255 (highest priority).
         /// </summary>
         public virtual byte Priority => 0;
@@ -63,12 +86,23 @@ namespace RemoteTech.Common.Commands
         /// <summary>
         ///     A short command description.
         /// </summary>
-        public virtual string ShortDescription { get; }
+        public abstract string ShortDescription { get; }
 
         /// <summary>
         ///     The time at which the command was enqueued.
         /// </summary>
         public virtual double TimeStamp { get; set; }
+
+        /// <summary>
+        ///     Total delay of the command (<see cref="IDelayCommand.Delay" /> + <see cref="IDelayCommand.ExtraDelay" />).
+        /// </summary>
+        public virtual double TotalDelay => Delay + ExtraDelay;
+
+        /// <summary>
+        ///     The vessel on which the command applies.
+        /// </summary>
+        public abstract Vessel Vessel { get;  }
+
 
 
         public virtual event EventHandler CommandEnqueued;
@@ -89,19 +123,10 @@ namespace RemoteTech.Common.Commands
         ///     Execute the command.
         /// </summary>
         /// <returns>true if the command was successfully executed, false otherwise.</returns>
-        public virtual bool Invoke()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract bool Invoke();
 
-        public virtual bool Load()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void Load(ConfigNode node);
 
-        public virtual bool Save()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void Save(ConfigNode node);
     }
 }
