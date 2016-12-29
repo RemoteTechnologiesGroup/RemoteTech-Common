@@ -51,10 +51,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Api\RemoteTechModules.cs" />
-    <Compile Include="Commands\AbstractCommand.cs" />
+    <Compile Include="Commands\AbstractDelayCommand.cs" />
     <Compile Include="CommonCore.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Interfaces\ICommand.cs" />
+    <Compile Include="Interfaces\IDelayCommand.cs" />
     <Compile Include="Interfaces\IDelayManager.cs" />
     <Compile Include="Interfaces\IRemoteTechSettings.cs" />
     <Compile Include="Interfaces\ISignalProcessorUnit.cs" />
