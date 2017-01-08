@@ -20,6 +20,15 @@ namespace RemoteTech.Common
         }
     }
 
+    [KSPAddon(KSPAddon.Startup.EditorAny, false)]
+    public class CommonCoreEditor : CommonCore
+    {
+        public new void Start()
+        {
+            base.Start();
+        }
+    }
+
     public abstract class CommonCore: MonoBehaviour
     {
         public void Start()
