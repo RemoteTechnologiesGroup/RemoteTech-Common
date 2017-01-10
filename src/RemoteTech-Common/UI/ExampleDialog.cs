@@ -31,7 +31,7 @@ namespace RemoteTech.Common.UI
             /*
             //How to launch this dialog
             ExampleDialog dialog = new ExampleDialog();
-            dialog.launch(new System.Object[] { }); 
+            dialog.launch(); 
             */
 
             //draw texture background
