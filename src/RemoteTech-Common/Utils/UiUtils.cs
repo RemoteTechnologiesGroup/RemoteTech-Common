@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 
@@ -24,6 +25,18 @@ namespace RemoteTech.Common.Utils
 
             Logging.Error($"Cannot Find Texture: {textureFileName}");
             return Texture2D.blackTexture;
+        }
+
+        public static string RoundToNearestMetricFactor(double number)
+        {
+            if (number > Math.Pow(10, 9))
+                return string.Format("{0:0.0} G", number / Math.Pow(10, 9));
+            else if (number > Math.Pow(10, 6))
+                return string.Format("{0:0.0} M", number / Math.Pow(10, 6));
+            else if (number > Math.Pow(10, 3))
+                return string.Format("{0:0.0} k", number / Math.Pow(10, 3));
+            else
+                return string.Format("{0:0.0}", number);
         }
     }
 }
