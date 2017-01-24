@@ -22,8 +22,8 @@ namespace RemoteTech.Common.AntennaSimulator
         public AntennaSimulatorWindow() : base("RemoteTech Antenna Simulator",
                                                 0.8f,
                                                 0.5f,
-                                                450,
-                                                450,
+                                                650,
+                                                400,
                                                 new DialogOptions[] { DialogOptions.HideDismissButton, DialogOptions.AllowBgInputs})
         {
             whichContentOnDisplay = SimContentType.RANGE; // the section a player see for the first time
@@ -117,8 +117,6 @@ namespace RemoteTech.Common.AntennaSimulator
 
             return;
 
-            string activeVesselText = string.Format("Power storage: {0:0.0}/{1:0.0}\n", ecReport.currentCapacity, ecReport.maxCapacity - ecReport.lockedCapacity);
-
             /*
                 int ecID = PartResourceLibrary.Instance.resourceDefinitions[ElectricChargeReport.ECName].id;
                 FlightGlobals.ActiveVessel.GetConnectedResourceTotals(ecID, out currECAmt, out maxECAmt);
@@ -134,10 +132,8 @@ namespace RemoteTech.Common.AntennaSimulator
                 }
             */
 
-            double sourceComPower = 0, targetComPower = 0;
-            double partialControlRangeMultipler = 0.2; //TODO: get from RT's CustomGameParams
+            
 
-            targetComPower = sourceComPower; // temp
             //leftVesselLabel.SetOptionText(activeVesselText);
 
             string targetVesselText = "<b>Target node</b>\n";
@@ -150,8 +146,8 @@ namespace RemoteTech.Common.AntennaSimulator
             //rightVesselLabel.SetOptionText(targetVesselText);
 
             string resultText = "\n<b>Range simulation</b>\n";
-            double maxPartialControlRange = RemoteTechCommNetScenario.RangeModel.GetMaximumRange(sourceComPower, targetComPower);
-            double maxFullControlRange = maxPartialControlRange * (1.0 - partialControlRangeMultipler);
+            double maxPartialControlRange = RemoteTechCommNetScenario.RangeModel.GetMaximumRange(0, 0);
+            double maxFullControlRange = maxPartialControlRange * (1.0 - 0.2);
 
             resultText += string.Format("Full probe control range: {0} m\nPartial probe control range: {1} m\n", maxFullControlRange, maxPartialControlRange);
             resultText += "~ Graph ~\n";
@@ -167,22 +163,42 @@ namespace RemoteTech.Common.AntennaSimulator
         //------------------------------------
         // Range section
         //------------------------------------
-        private double totalComPower = 0.0;
-        private double totalDrainPower = 0.0;
+        private double totalAntennaComPower = 0.0;
+        private double totalAntennaDrainPower = 0.0;
+        private double antennaSignalStrength = 50.0;
 
         private void displayRangeInfo(List<Part> parts)
         {
+            double partialControlRangeMultipler = 0.2; //TODO: get from RT's CustomGameParams
+
             DialogGUILabel message = new DialogGUILabel("<b>List of antennas detected:</b>", true, false);
             contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { message }));
 
+            //reset information data
             antennaModules.Clear();
+            totalAntennaComPower = 0;
+            totalAntennaDrainPower = 0;
+
             for (int i = 0; i < parts.Count; i++)
             {
+                bool inUseState = true;
                 Part thisPart = parts[i];
                 ModuleDataTransmitter antennaModule;
                 if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
                 {
-                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, thisPart.partInfo.title, delegate(bool b) { antennaSelected(b, antennaModules.Count); }, 130, 24);
+                    ModuleDeployableAntenna delayModule;
+                    if ((delayModule = thisPart.FindModuleImplementing<ModuleDeployableAntenna>()) != null)
+                        inUseState = (delayModule.deployState == ModuleDeployablePart.DeployState.EXTENDED);
+
+                    if (inUseState)
+                    {
+                        totalAntennaComPower += antennaModule.CommPower;
+                        totalAntennaDrainPower += antennaModule.DataResourceCost;
+                    }
+
+                    int antennaIndex = antennaModules.Count; // antennaModules.Count doesn't work due to the compiler optimization
+
+                    DialogGUIToggle toggleBtn = new DialogGUIToggle(inUseState, thisPart.partInfo.title, delegate(bool b) { antennaSelected(b, antennaIndex); }, 130, 24);
                     DialogGUILabel comPowerLabel = new DialogGUILabel("Com power: "+ UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower));
                     DialogGUILabel powerConsLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost));
                     contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn, comPowerLabel, powerConsLabel }));
@@ -196,29 +212,29 @@ namespace RemoteTech.Common.AntennaSimulator
             contentRows.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { combinablePower, powerWarning }));
         }
 
-        private void antennaSelected(bool toggleState, int indexAntenna) // problem: indexantenna is locked to 4
+        private void antennaSelected(bool toggleState, int indexAntenna)
         {
             if (toggleState)
             {
-                totalComPower += antennaModules[indexAntenna].CommPower;
-                totalDrainPower += antennaModules[indexAntenna].DataResourceCost;
+                totalAntennaComPower += antennaModules[indexAntenna].CommPower;
+                totalAntennaDrainPower += antennaModules[indexAntenna].DataResourceCost;
             }
             else
             {
-                totalComPower -= antennaModules[indexAntenna].CommPower;
-                totalDrainPower -= antennaModules[indexAntenna].DataResourceCost;
+                totalAntennaComPower -= antennaModules[indexAntenna].CommPower;
+                totalAntennaDrainPower -= antennaModules[indexAntenna].DataResourceCost;
             }
         }
 
         private string getCombinablePowerMessage()
         {
-            return "Combinable com power: "+UiUtils.RoundToNearestMetricFactor(totalComPower);
+            return "Combinable com power: "+UiUtils.RoundToNearestMetricFactor(totalAntennaComPower);
         }
 
         private string getWarningPowerMessage()
         {
             if (true)
-                return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (ecReport.currentCapacity-ecReport.lockedCapacity)/totalDrainPower);
+                return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (ecReport.currentCapacity-ecReport.lockedCapacity)/totalAntennaDrainPower);
             else
                 return "Sustainable";
         }
@@ -226,6 +242,8 @@ namespace RemoteTech.Common.AntennaSimulator
         //------------------------------------
         // Science section
         //------------------------------------
+        private float totalScienceDataSize = 0;
+        private float customScienceDataSize = 0;
 
         private void displayScienceInfo(List<Part> parts)
         {
@@ -244,12 +262,12 @@ namespace RemoteTech.Common.AntennaSimulator
                 {
                     ScienceExperiment thisExp = ResearchAndDevelopment.GetExperiment(experimentIDs[j]);
 
-                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, string.Format("{0} - {1} Mits", thisExp.experimentTitle, thisExp.dataScale * thisExp.baseValue) , null);
+                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, string.Format("{0} - {1} Mits", thisExp.experimentTitle, thisExp.dataScale * thisExp.baseValue) , delegate(bool b) { scienceSelected(b, thisExp.id); });
                     contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn }));
                 }
 
-                DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom science data (Mits)", null, 120, 24);
-                DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, null);
+                DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom data size (Mits)", customScienceSelected, 120, 24);
+                DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput);
                 contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { customToggleBtn, sizeInput, new DialogGUIFlexibleSpace() }));
 
                 //scienceText += string.Format("Science bonus from the signal strength: {0:0.0}%\n", 12.2);
@@ -258,14 +276,60 @@ namespace RemoteTech.Common.AntennaSimulator
             }
         }
 
+        private void scienceSelected(bool toggleState, string scienceID)
+        {
+            ScienceExperiment thisExp = ResearchAndDevelopment.GetExperiment(scienceID);
+            if (toggleState)
+            {
+                totalScienceDataSize += thisExp.baseValue * thisExp.dataScale;
+            }
+            else
+            {
+                totalScienceDataSize -= thisExp.baseValue * thisExp.dataScale;
+            }
+        }
+
+        private void customScienceSelected(bool toggleState)
+        {
+            if(toggleState)
+            {
+                totalScienceDataSize += customScienceDataSize;
+            }
+            else
+                totalScienceDataSize -= customScienceDataSize;
+        }
+
+        private string customScienceInput(string userInput)
+        {
+            bool resultParsing = float.TryParse(userInput, out customScienceDataSize);
+
+            return ""; // DialogGUITextInput never uses the returned string.
+        }
+
         //------------------------------------
         // Power section
         //------------------------------------
 
         private void displayPowerInfo(List<Part> parts)
         {
-            DialogGUIButton btn = new DialogGUIButton("POWER!!!", null, false);
-            contentRows.AddChild(btn);
+            DialogGUILabel massiveMessageLabel = new DialogGUILabel(getPowerReportMessage, true, false);
+            DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
+
+            contentRows.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { massiveMessageLabel, new DialogGUISpace(12) ,powerWarning }));
+        }
+
+        private string getPowerReportMessage()
+        {
+            string message = "<b>Storage of electric charge</b>\n";
+            message += string.Format("Current usable storage: {0:0.0} / {1:0.0} charge", ecReport.currentCapacity - ecReport.lockedCapacity, ecReport.maxCapacity) + "\n";
+            message += string.Format("Reserved storage: {0:0.0} charge", ecReport.lockedCapacity) +"\n\n";
+
+            message += "<b>Electric charge flow</b>\n";
+            message += string.Format("Production rate: {0:0.0} charge/s", ecReport.productionRate) + "\n";
+            message += string.Format("Consumption rate: {0:0.0} charge/s (antenna drain: {1:0.0})", ecReport.consumptionRate + totalAntennaDrainPower, totalAntennaDrainPower) + "\n";
+            message += string.Format("Overall rate: {0:0.0} charge/s", ecReport.estimatedOverallRate - totalAntennaDrainPower) + "\n";
+
+            return message;
         }
     }
 }

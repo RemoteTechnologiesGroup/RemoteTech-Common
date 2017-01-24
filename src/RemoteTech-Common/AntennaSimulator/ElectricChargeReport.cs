@@ -15,7 +15,7 @@ namespace RemoteTech.Common.AntennaSimulator
         public double lockedCapacity = 0;
         public double consumptionRate = 0.0;
         public double productionRate = 0.0;
-        public double antennaRate = 0.0;
+        //public double antennaRate = 0.0;
         public double estimatedOverallRate = 0.0;
 
         private PartResourceDefinition ecResDef;
@@ -31,24 +31,23 @@ namespace RemoteTech.Common.AntennaSimulator
             for (int i = 0; i < parts.Count; i++)
             {
                 Part thisPart = parts[i];
-                
-                // consumer
-                if (thisPart.FindModuleImplementing<ModuleDataTransmitter>() != null)
+
+                // consumer except for antenna, whose state is determined by user
+                /*
+                bool antennaInUseState = true;
+                ModuleDataTransmitter antennaModule;
+                if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
                 {
                     ModuleDeployableAntenna delayModule;
                     if ((delayModule = thisPart.FindModuleImplementing<ModuleDeployableAntenna>()) != null)
+                        antennaInUseState = (delayModule.deployState == ModuleDeployablePart.DeployState.EXTENDED);
+
+                    if(antennaInUseState)
                     {
-                        if(delayModule.deployState == ModuleDeployablePart.DeployState.EXTENDED)
-                        {
-
-                        }
-                    }
-
-                    if (RUIutils.Any<IResourceConsumer>(thisPart.Modules.GetModules<IResourceConsumer>(), (IResourceConsumer a) => a.GetConsumedResources().Contains(this.ecResDef)))
-                    {
-
+                        antennaRate += antennaModule.DataResourceCost;
                     }
                 }
+                */
                 List<IResourceConsumer> rcs;
                 if ((rcs = thisPart.Modules.GetModules<IResourceConsumer>().FindAll(a => a.GetConsumedResources().Contains(this.ecResDef))) != null)
                 {
