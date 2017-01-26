@@ -19,11 +19,14 @@ namespace RemoteTech.Common.AntennaSimulator
         private ElectricChargeReport ecReport;
         private List<ModuleDataTransmitter> antennaModules = new List<ModuleDataTransmitter>();
 
+        private static readonly int dialogWidth = 650;
+        private static readonly int dialogHeight = 400;
+
         public AntennaSimulatorWindow() : base("RemoteTech Antenna Simulator",
                                                 0.8f,
                                                 0.5f,
-                                                650,
-                                                400,
+                                                dialogWidth,
+                                                dialogHeight,
                                                 new DialogOptions[] { DialogOptions.HideDismissButton, DialogOptions.AllowBgInputs})
         {
             whichContentOnDisplay = SimContentType.RANGE; // the section a player see for the first time
@@ -171,13 +174,18 @@ namespace RemoteTech.Common.AntennaSimulator
         {
             double partialControlRangeMultipler = 0.2; //TODO: get from RT's CustomGameParams
 
-            DialogGUILabel message = new DialogGUILabel("<b>List of antennas detected:</b>", true, false);
-            contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { message }));
-
             //reset information data
             antennaModules.Clear();
             totalAntennaComPower = 0;
             totalAntennaDrainPower = 0;
+
+            DialogGUIBox currentNodeBox = new DialogGUIBox("", (dialogWidth - 50)/2, dialogHeight / 2, null, new DialogGUIBox[] { });
+            DialogGUIBox targetNodeBox = new DialogGUIBox("", (dialogWidth - 50) / 2, dialogHeight / 2, null, new DialogGUIBox[] { });
+
+            // CURRENT NODE LAYOUT
+            DialogGUIVerticalLayout currentNodeLayout = new DialogGUIVerticalLayout(true, false, 4, new RectOffset(5,5,5,5), TextAnchor.MiddleLeft, new DialogGUIBase[] { });
+            DialogGUILabel message = new DialogGUILabel("<b>List of antennas detected:</b>", true, false);
+            currentNodeLayout.AddChild(message);
 
             for (int i = 0; i < parts.Count; i++)
             {
@@ -201,7 +209,7 @@ namespace RemoteTech.Common.AntennaSimulator
                     DialogGUIToggle toggleBtn = new DialogGUIToggle(inUseState, thisPart.partInfo.title, delegate(bool b) { antennaSelected(b, antennaIndex); }, 130, 24);
                     DialogGUILabel comPowerLabel = new DialogGUILabel("Com power: "+ UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower));
                     DialogGUILabel powerConsLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost));
-                    contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn, comPowerLabel, powerConsLabel }));
+                    currentNodeLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn, comPowerLabel, powerConsLabel }));
 
                     antennaModules.Add(antennaModule);
                 }
@@ -209,7 +217,30 @@ namespace RemoteTech.Common.AntennaSimulator
 
             DialogGUILabel combinablePower = new DialogGUILabel(getCombinablePowerMessage, true, false);
             DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
-            contentRows.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { combinablePower, powerWarning }));
+            currentNodeLayout.AddChild(combinablePower);
+            currentNodeLayout.AddChild(powerWarning);
+            currentNodeBox.AddChild(currentNodeLayout);
+
+            // TARGET NODE LAYOUT
+            DialogGUIVerticalLayout targetNodeLayout = new DialogGUIVerticalLayout(true, false, 4, new RectOffset(5,5,5,5), TextAnchor.MiddleLeft, new DialogGUIBase[] { });
+            targetNodeLayout.AddChild(message);
+
+            DialogGUILabel nodeMessage = new DialogGUILabel("<b>Communication nodes</b>", true, false);
+            contentRows.AddChild(nodeMessage);
+            contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { currentNodeBox, new DialogGUISpace(5), targetNodeBox }));
+
+            DialogGUILabel resultMessage = new DialogGUILabel("<b>Estimated ranges and other predictions</b>", true, false);
+            contentRows.AddChild(resultMessage);
+            Texture2D graphImageTxt = new Texture2D(400, 100, TextureFormat.ARGB32, false);
+            for (int y = 0; y < graphImageTxt.height; y++)
+            {
+                for (int x = 0; x < graphImageTxt.width; x++)
+                    graphImageTxt.SetPixel(x, y, Color.grey);
+            }
+            graphImageTxt.Apply();
+            DialogGUIImage graphImage = new DialogGUIImage(new Vector2(graphImageTxt.width, graphImageTxt.height), Vector2.zero, Color.white, graphImageTxt);
+            contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleCenter, new DialogGUIBase[] { new DialogGUIFlexibleSpace(), graphImage, new DialogGUIFlexibleSpace() }));
+            
         }
 
         private void antennaSelected(bool toggleState, int indexAntenna)
