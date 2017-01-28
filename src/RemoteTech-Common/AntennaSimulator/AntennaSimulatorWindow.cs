@@ -12,9 +12,11 @@ namespace RemoteTech.Common.AntennaSimulator
 {
     public class AntennaSimulatorWindow : AbstractDialog
     {
-        private enum SimContentType { RANGE, POWER, SCIENCE };
-        private SimContentType whichContentOnDisplay;
-        private DialogGUIVerticalLayout contentRows;
+        private enum InfoContent { RANGE, POWER, SCIENCE };
+        private enum TargetNode { CUSTOM, TARGET, DSN };
+
+        private DialogGUIVerticalLayout contentPaneLayout;
+        private DialogGUIVerticalLayout targetNodePaneLayout;
 
         private ElectricChargeReport ecReport;
         private List<ModuleDataTransmitter> antennaModules = new List<ModuleDataTransmitter>();
@@ -29,7 +31,6 @@ namespace RemoteTech.Common.AntennaSimulator
                                                 dialogHeight,
                                                 new DialogOptions[] { DialogOptions.HideDismissButton, DialogOptions.AllowBgInputs})
         {
-            whichContentOnDisplay = SimContentType.RANGE; // the section a player see for the first time
         }
 
         protected override List<DialogGUIBase> drawContentComponents()
@@ -45,56 +46,92 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUILabel descrptionLabel = new DialogGUILabel(string.Format("Based on this vessel '{0}', a number of estimations are computed and displayed below.\n\n", vesselName), true, false);
             contentComponents.Add(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { descrptionLabel }));
 
-            DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { whichContentOnDisplay = SimContentType.RANGE; refreshContent(); }, false);
-            DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { whichContentOnDisplay = SimContentType.SCIENCE; refreshContent(); }, false);
-            DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { whichContentOnDisplay = SimContentType.POWER; refreshContent(); }, false);
-            DialogGUIButton refreshButton = new DialogGUIButton("Refresh", refreshContent, false);
-            contentComponents.Add(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { rangeButton, scienceButton, powerButton, new DialogGUIFlexibleSpace(), refreshButton }));
+            // BUTTON TABS
+            DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { drawContent(InfoContent.RANGE); }, false);
+            DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { drawContent(InfoContent.SCIENCE); }, false);
+            DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { drawContent(InfoContent.POWER); }, false);
+            DialogGUIButton refreshButton = new DialogGUIButton("Refresh", drawContent, false);
+
+            DialogGUIHorizontalLayout tabbedButtonRow = new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { rangeButton, powerButton });
+            if (ResearchAndDevelopment.Instance != null)
+                tabbedButtonRow.AddChild(scienceButton);
+            tabbedButtonRow.AddChild(new DialogGUIFlexibleSpace());
+            tabbedButtonRow.AddChild(refreshButton);
+            contentComponents.Add(tabbedButtonRow);
 
             DialogGUIBase[] rows = new DialogGUIBase[] { new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true) };
-            contentRows = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, rows);
-            contentComponents.Add(new DialogGUIScrollList(Vector2.one, false, true, contentRows));
+            contentPaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, rows);
+            contentComponents.Add(new DialogGUIScrollList(Vector2.one, false, true, contentPaneLayout));
+
+            targetNodePaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
 
             return contentComponents;
         }
 
         protected override void OnAwake(object[] args)
         {
-            refreshContent();
+            drawContent(InfoContent.RANGE); // the info panel a player sees for the first time
         }
 
-        private void registerContentComponents()
+        private void registerContentComponents(DialogGUIVerticalLayout layout)
         {
-            if (contentRows.children.Count <= 1)
+            if (layout.children.Count < 1)
                 return;
 
             Stack<Transform> stack = new Stack<Transform>();
-            stack.Push(contentRows.uiItem.gameObject.transform);
-            for (int i = 1; i < contentRows.children.Count; i++)
+            stack.Push(layout.uiItem.gameObject.transform);// problem for the target content
+            for (int i = 0; i < layout.children.Count; i++)
             {
-                contentRows.children[i].Create(ref stack, HighLogic.UISkin);
+                if (!(layout.children[i] is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
+                    layout.children[i].Create(ref stack, HighLogic.UISkin);
             }
         }
 
-        private void deleteContentComponents()
+        private void deleteContentComponents(DialogGUIVerticalLayout layout)
         {
-            if (contentRows.children.Count <= 1)
+            if (layout.children.Count < 1)
                 return;
 
-            int size = contentRows.children.Count;
-            for (int i = size - 1; i >= 1; i--)
+            int size = layout.children.Count;
+            for (int i = size - 1; i >= 0; i--)
             {
-                DialogGUIBase thisChild = contentRows.children[i];
+                DialogGUIBase thisChild = layout.children[i];
                 if (!(thisChild is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
                 {
-                    contentRows.children.RemoveAt(i);
+                    layout.children.RemoveAt(i);
                     thisChild.uiItem.gameObject.DestroyGameObjectImmediate();
                 }
             }
         }
 
-        private void refreshContent()
+        private TargetNode currentTargetNode = TargetNode.CUSTOM;
+        private void drawTargetNodeContent() { drawTargetNodeContent(currentTargetNode); }
+        private void drawTargetNodeContent(TargetNode whichNode)
         {
+            currentTargetNode = whichNode;
+
+            deleteContentComponents(targetNodePaneLayout);
+            switch(whichNode)
+            {
+                case TargetNode.CUSTOM:
+                    displayCustomTargetNode();
+                    break;
+                case TargetNode.TARGET:
+                    displayUserTargetNode();
+                    break;
+                case TargetNode.DSN:
+                    displayDSNTargetNode();
+                    break;
+            }
+            registerContentComponents(targetNodePaneLayout);
+        }
+
+        private InfoContent currentContent;
+        private void drawContent() { drawContent(currentContent); }
+        private void drawContent(InfoContent whichContent)
+        {
+            currentContent = whichContent;
+
             List<Part> parts;
             if (HighLogic.LoadedSceneIsFlight)
                 parts = FlightGlobals.ActiveVessel.Parts;
@@ -103,20 +140,21 @@ namespace RemoteTech.Common.AntennaSimulator
 
             ecReport = new ElectricChargeReport(parts);
 
-            deleteContentComponents();
-            switch (whichContentOnDisplay)
+            deleteContentComponents(contentPaneLayout);
+            switch (whichContent)
             {
-                case SimContentType.RANGE:
+                case InfoContent.RANGE:
                     displayRangeInfo(parts);
+                    drawTargetNodeContent();
                     break;
-                case SimContentType.POWER:
+                case InfoContent.POWER:
                     displayPowerInfo(parts);
                     break;
-                case SimContentType.SCIENCE:
+                case InfoContent.SCIENCE:
                     displayScienceInfo(parts);
                     break;
             }
-            registerContentComponents();
+            registerContentComponents(contentPaneLayout);
 
             return;
 
@@ -179,14 +217,12 @@ namespace RemoteTech.Common.AntennaSimulator
             totalAntennaComPower = 0;
             totalAntennaDrainPower = 0;
 
-            DialogGUIBox currentNodeBox = new DialogGUIBox("", (dialogWidth - 50)/2, dialogHeight / 2, null, new DialogGUIBox[] { });
-            DialogGUIBox targetNodeBox = new DialogGUIBox("", (dialogWidth - 50) / 2, dialogHeight / 2, null, new DialogGUIBox[] { });
-
-            // CURRENT NODE LAYOUT
+            // CURRENT NODE PANE
             DialogGUIVerticalLayout currentNodeLayout = new DialogGUIVerticalLayout(true, false, 4, new RectOffset(5,5,5,5), TextAnchor.MiddleLeft, new DialogGUIBase[] { });
-            DialogGUILabel message = new DialogGUILabel("<b>List of antennas detected:</b>", true, false);
+            DialogGUILabel message = new DialogGUILabel("<b>Your vessel</b>\n<b>List of antennas detected:</b>", true, false);
             currentNodeLayout.AddChild(message);
 
+            //list the antennas detected on the active vessel
             for (int i = 0; i < parts.Count; i++)
             {
                 bool inUseState = true;
@@ -207,7 +243,7 @@ namespace RemoteTech.Common.AntennaSimulator
                     int antennaIndex = antennaModules.Count; // antennaModules.Count doesn't work due to the compiler optimization
 
                     DialogGUIToggle toggleBtn = new DialogGUIToggle(inUseState, thisPart.partInfo.title, delegate(bool b) { antennaSelected(b, antennaIndex); }, 130, 24);
-                    DialogGUILabel comPowerLabel = new DialogGUILabel("Com power: "+ UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower));
+                    DialogGUILabel comPowerLabel = new DialogGUILabel("Power: "+ UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower));
                     DialogGUILabel powerConsLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost));
                     currentNodeLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn, comPowerLabel, powerConsLabel }));
 
@@ -219,18 +255,28 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
             currentNodeLayout.AddChild(combinablePower);
             currentNodeLayout.AddChild(powerWarning);
-            currentNodeBox.AddChild(currentNodeLayout);
 
-            // TARGET NODE LAYOUT
+            // TARGET NODE PANE
             DialogGUIVerticalLayout targetNodeLayout = new DialogGUIVerticalLayout(true, false, 4, new RectOffset(5,5,5,5), TextAnchor.MiddleLeft, new DialogGUIBase[] { });
-            targetNodeLayout.AddChild(message);
+            DialogGUILabel message2 = new DialogGUILabel("<b>Target</b>", true, false);
+            targetNodeLayout.AddChild(message2);
 
-            DialogGUILabel nodeMessage = new DialogGUILabel("<b>Communication nodes</b>", true, false);
-            contentRows.AddChild(nodeMessage);
-            contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { currentNodeBox, new DialogGUISpace(5), targetNodeBox }));
+            DialogGUIToggle commNodeToggleBtn = new DialogGUIToggle(true, "Custom node", delegate(bool b) { drawTargetNodeContent(TargetNode.CUSTOM); });
+            DialogGUIToggle targetToggleBtn = new DialogGUIToggle(false, "Designated target", delegate (bool b) { drawTargetNodeContent(TargetNode.TARGET); });
+            DialogGUIToggle DSNToggleBtn = new DialogGUIToggle(false, "Deep Space Network", delegate (bool b) { drawTargetNodeContent(TargetNode.DSN); });
+            DialogGUIToggleGroup targetToggleGroup = new DialogGUIToggleGroup(new DialogGUIToggle[] { commNodeToggleBtn, targetToggleBtn, DSNToggleBtn });
+            targetNodeLayout.AddChild(targetToggleGroup);
 
+            //Top row
+            DialogGUILabel nodeMessage = new DialogGUILabel("<b>Connection between your vessel and a target node</b>", true, false);
+            contentPaneLayout.AddChild(nodeMessage);
+            DialogGUIScrollList targetNodeScrollPane = new DialogGUIScrollList(new Vector2((dialogWidth - 50) / 2, dialogHeight / 2), false, true, targetNodeLayout);
+            DialogGUIScrollList currentNodeScrollPane = new DialogGUIScrollList(new Vector2((dialogWidth - 50) / 2, dialogHeight / 2), false, true, currentNodeLayout);
+            contentPaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { currentNodeScrollPane, new DialogGUISpace(5), targetNodeScrollPane }));
+
+            //Bottom row
             DialogGUILabel resultMessage = new DialogGUILabel("<b>Estimated ranges and other predictions</b>", true, false);
-            contentRows.AddChild(resultMessage);
+            contentPaneLayout.AddChild(resultMessage);
             Texture2D graphImageTxt = new Texture2D(400, 100, TextureFormat.ARGB32, false);
             for (int y = 0; y < graphImageTxt.height; y++)
             {
@@ -239,8 +285,26 @@ namespace RemoteTech.Common.AntennaSimulator
             }
             graphImageTxt.Apply();
             DialogGUIImage graphImage = new DialogGUIImage(new Vector2(graphImageTxt.width, graphImageTxt.height), Vector2.zero, Color.white, graphImageTxt);
-            contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleCenter, new DialogGUIBase[] { new DialogGUIFlexibleSpace(), graphImage, new DialogGUIFlexibleSpace() }));
+            contentPaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleCenter, new DialogGUIBase[] { new DialogGUIFlexibleSpace(), graphImage, new DialogGUIFlexibleSpace() }));
             
+        }
+
+        private void displayCustomTargetNode()
+        {
+            DialogGUILabel commPowerLabel = new DialogGUILabel("Com power", 120, 24);
+            DialogGUITextInput powerInput = new DialogGUITextInput("", false, 12, null, 24);
+
+            targetNodePaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, powerInput }));
+        }
+
+        private void displayUserTargetNode()
+        {
+
+        }
+
+        private void displayDSNTargetNode()
+        {
+
         }
 
         private void antennaSelected(bool toggleState, int indexAntenna)
@@ -270,6 +334,8 @@ namespace RemoteTech.Common.AntennaSimulator
                 return "Sustainable";
         }
 
+        
+
         //------------------------------------
         // Science section
         //------------------------------------
@@ -279,32 +345,27 @@ namespace RemoteTech.Common.AntennaSimulator
         private void displayScienceInfo(List<Part> parts)
         {
             if (ResearchAndDevelopment.Instance == null)
+                return;
+
+            DialogGUILabel message = new DialogGUILabel("<b>List of science experiments available:</b>", true, false);
+            contentPaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { message }));
+
+            List<string> experimentIDs = ResearchAndDevelopment.GetExperimentIDs();
+            for (int j = 0; j < experimentIDs.Count; j++)
             {
-                DialogGUILabel message = new DialogGUILabel("The research and development facility is closed.", true, false);
-                contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { message }));
+                ScienceExperiment thisExp = ResearchAndDevelopment.GetExperiment(experimentIDs[j]);
+
+                DialogGUIToggle toggleBtn = new DialogGUIToggle(false, string.Format("{0} - {1} Mits", thisExp.experimentTitle, thisExp.dataScale * thisExp.baseValue) , delegate(bool b) { scienceSelected(b, thisExp.id); });
+                contentPaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn }));
             }
-            else
-            {
-                DialogGUILabel message = new DialogGUILabel("<b>List of science experiments available:</b>", true, false);
-                contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { message }));
 
-                List<string> experimentIDs = ResearchAndDevelopment.GetExperimentIDs();
-                for (int j = 0; j < experimentIDs.Count; j++)
-                {
-                    ScienceExperiment thisExp = ResearchAndDevelopment.GetExperiment(experimentIDs[j]);
+            DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom data size (Mits)", customScienceSelected, 120, 24);
+            DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput);
+            contentPaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { customToggleBtn, sizeInput, new DialogGUIFlexibleSpace() }));
 
-                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, string.Format("{0} - {1} Mits", thisExp.experimentTitle, thisExp.dataScale * thisExp.baseValue) , delegate(bool b) { scienceSelected(b, thisExp.id); });
-                    contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { toggleBtn }));
-                }
-
-                DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom data size (Mits)", customScienceSelected, 120, 24);
-                DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput);
-                contentRows.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { customToggleBtn, sizeInput, new DialogGUIFlexibleSpace() }));
-
-                //scienceText += string.Format("Science bonus from the signal strength: {0:0.0}%\n", 12.2);
-                //scienceText += string.Format("Total power required: {0:0.00} charges for {1:0.00} seconds\n", 1234, 1234);
-                //scienceText += "<color=red>Warning: Insufficient power to transmit the largest science data (123 Mits)</color>\n";
-            }
+            //scienceText += string.Format("Science bonus from the signal strength: {0:0.0}%\n", 12.2);
+            //scienceText += string.Format("Total power required: {0:0.00} charges for {1:0.00} seconds\n", 1234, 1234);
+            //scienceText += "<color=red>Warning: Insufficient power to transmit the largest science data (123 Mits)</color>\n";
         }
 
         private void scienceSelected(bool toggleState, string scienceID)
@@ -346,7 +407,7 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUILabel massiveMessageLabel = new DialogGUILabel(getPowerReportMessage, true, false);
             DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
 
-            contentRows.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { massiveMessageLabel, new DialogGUISpace(12) ,powerWarning }));
+            contentPaneLayout.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { massiveMessageLabel, new DialogGUISpace(12) ,powerWarning }));
         }
 
         private string getPowerReportMessage()
