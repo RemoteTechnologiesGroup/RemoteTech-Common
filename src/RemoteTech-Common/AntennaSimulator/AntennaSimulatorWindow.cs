@@ -10,6 +10,7 @@ using RemoteTech.Common.Utils;
 
 namespace RemoteTech.Common.AntennaSimulator
 {
+    //TODO: partition this messy class into portions
     public class AntennaSimulatorWindow : AbstractDialog
     {
         private enum InfoContent { RANGE, POWER, SCIENCE };
@@ -47,10 +48,10 @@ namespace RemoteTech.Common.AntennaSimulator
             contentComponents.Add(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { descrptionLabel }));
 
             // BUTTON TABS
-            DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { drawContent(InfoContent.RANGE); }, false);
-            DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { drawContent(InfoContent.SCIENCE); }, false);
-            DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { drawContent(InfoContent.POWER); }, false);
-            DialogGUIButton refreshButton = new DialogGUIButton("Refresh", drawContent, false);
+            DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { displayContent(InfoContent.RANGE); }, false);
+            DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { displayContent(InfoContent.SCIENCE); }, false);
+            DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { displayContent(InfoContent.POWER); }, false);
+            DialogGUIButton refreshButton = new DialogGUIButton("Recalculate", displayContent, false);
 
             DialogGUIHorizontalLayout tabbedButtonRow = new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { rangeButton, powerButton });
             if (ResearchAndDevelopment.Instance != null)
@@ -63,14 +64,12 @@ namespace RemoteTech.Common.AntennaSimulator
             contentPaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, rows);
             contentComponents.Add(new DialogGUIScrollList(Vector2.one, false, true, contentPaneLayout));
 
-            targetNodePaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
-
             return contentComponents;
         }
 
         protected override void OnAwake(object[] args)
         {
-            drawContent(InfoContent.RANGE); // the info panel a player sees for the first time
+            displayContent(InfoContent.RANGE); // the info panel a player sees for the first time
         }
 
         private void registerContentComponents(DialogGUIVerticalLayout layout)
@@ -105,8 +104,8 @@ namespace RemoteTech.Common.AntennaSimulator
         }
 
         private TargetNode currentTargetNode = TargetNode.CUSTOM;
-        private void drawTargetNodeContent() { drawTargetNodeContent(currentTargetNode); }
-        private void drawTargetNodeContent(TargetNode whichNode)
+        private void displayTargetNodeContent() { displayTargetNodeContent(currentTargetNode); }
+        private void displayTargetNodeContent(TargetNode whichNode)
         {
             currentTargetNode = whichNode;
 
@@ -114,21 +113,21 @@ namespace RemoteTech.Common.AntennaSimulator
             switch(whichNode)
             {
                 case TargetNode.CUSTOM:
-                    displayCustomTargetNode();
+                    drawCustomTargetNode();
                     break;
                 case TargetNode.TARGET:
-                    displayUserTargetNode();
+                    drawUserTargetNode();
                     break;
                 case TargetNode.DSN:
-                    displayDSNTargetNode();
+                    drawDSNTargetNode();
                     break;
             }
             registerContentComponents(targetNodePaneLayout);
         }
 
         private InfoContent currentContent;
-        private void drawContent() { drawContent(currentContent); }
-        private void drawContent(InfoContent whichContent)
+        private void displayContent() { displayContent(currentContent); }
+        private void displayContent(InfoContent whichContent)
         {
             currentContent = whichContent;
 
@@ -144,14 +143,13 @@ namespace RemoteTech.Common.AntennaSimulator
             switch (whichContent)
             {
                 case InfoContent.RANGE:
-                    displayRangeInfo(parts);
-                    drawTargetNodeContent();
+                    drawRangeInfo(parts);
                     break;
                 case InfoContent.POWER:
-                    displayPowerInfo(parts);
+                    drawPowerInfo(parts);
                     break;
                 case InfoContent.SCIENCE:
-                    displayScienceInfo(parts);
+                    drawScienceInfo(parts);
                     break;
             }
             registerContentComponents(contentPaneLayout);
@@ -208,7 +206,7 @@ namespace RemoteTech.Common.AntennaSimulator
         private double totalAntennaDrainPower = 0.0;
         private double antennaSignalStrength = 50.0;
 
-        private void displayRangeInfo(List<Part> parts)
+        private void drawRangeInfo(List<Part> parts)
         {
             double partialControlRangeMultipler = 0.2; //TODO: get from RT's CustomGameParams
 
@@ -261,11 +259,18 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUILabel message2 = new DialogGUILabel("<b>Target</b>", true, false);
             targetNodeLayout.AddChild(message2);
 
-            DialogGUIToggle commNodeToggleBtn = new DialogGUIToggle(true, "Custom node", delegate(bool b) { drawTargetNodeContent(TargetNode.CUSTOM); });
-            DialogGUIToggle targetToggleBtn = new DialogGUIToggle(false, "Designated target", delegate (bool b) { drawTargetNodeContent(TargetNode.TARGET); });
-            DialogGUIToggle DSNToggleBtn = new DialogGUIToggle(false, "Deep Space Network", delegate (bool b) { drawTargetNodeContent(TargetNode.DSN); });
+            DialogGUIToggle commNodeToggleBtn = new DialogGUIToggle(true, "Custom node", delegate(bool b) { displayTargetNodeContent(TargetNode.CUSTOM); });
+            DialogGUIToggle targetToggleBtn = new DialogGUIToggle(false, "Designated target", delegate (bool b) { displayTargetNodeContent(TargetNode.TARGET); });
+            DialogGUIToggle DSNToggleBtn = new DialogGUIToggle(false, "Deep Space Network", delegate (bool b) { displayTargetNodeContent(TargetNode.DSN); });
             DialogGUIToggleGroup targetToggleGroup = new DialogGUIToggleGroup(new DialogGUIToggle[] { commNodeToggleBtn, targetToggleBtn, DSNToggleBtn });
             targetNodeLayout.AddChild(targetToggleGroup);
+
+            DialogGUILabel message3 = new DialogGUILabel("Configuration below:", true, false);
+            targetNodeLayout.AddChild(message3);
+
+            targetNodePaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
+            drawCustomTargetNode();
+            targetNodeLayout.AddChild(targetNodePaneLayout);
 
             //Top row
             DialogGUILabel nodeMessage = new DialogGUILabel("<b>Connection between your vessel and a target node</b>", true, false);
@@ -289,7 +294,7 @@ namespace RemoteTech.Common.AntennaSimulator
             
         }
 
-        private void displayCustomTargetNode()
+        private void drawCustomTargetNode()
         {
             DialogGUILabel commPowerLabel = new DialogGUILabel("Com power", 120, 24);
             DialogGUITextInput powerInput = new DialogGUITextInput("", false, 12, null, 24);
@@ -297,12 +302,12 @@ namespace RemoteTech.Common.AntennaSimulator
             targetNodePaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, powerInput }));
         }
 
-        private void displayUserTargetNode()
+        private void drawUserTargetNode()
         {
 
         }
 
-        private void displayDSNTargetNode()
+        private void drawDSNTargetNode()
         {
 
         }
@@ -342,7 +347,7 @@ namespace RemoteTech.Common.AntennaSimulator
         private float totalScienceDataSize = 0;
         private float customScienceDataSize = 0;
 
-        private void displayScienceInfo(List<Part> parts)
+        private void drawScienceInfo(List<Part> parts)
         {
             if (ResearchAndDevelopment.Instance == null)
                 return;
@@ -402,7 +407,7 @@ namespace RemoteTech.Common.AntennaSimulator
         // Power section
         //------------------------------------
 
-        private void displayPowerInfo(List<Part> parts)
+        private void drawPowerInfo(List<Part> parts)
         {
             DialogGUILabel massiveMessageLabel = new DialogGUILabel(getPowerReportMessage, true, false);
             DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
