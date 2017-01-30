@@ -51,7 +51,7 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { displayContent(InfoContent.RANGE); }, false);
             DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { displayContent(InfoContent.SCIENCE); }, false);
             DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { displayContent(InfoContent.POWER); }, false);
-            DialogGUIButton refreshButton = new DialogGUIButton("Recalculate", displayContent, false);
+            DialogGUIButton refreshButton = new DialogGUIButton("Refresh", displayContent, false);
 
             DialogGUIHorizontalLayout tabbedButtonRow = new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { rangeButton, powerButton });
             if (ResearchAndDevelopment.Instance != null)
@@ -268,7 +268,7 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUILabel message3 = new DialogGUILabel("Configuration below:", true, false);
             targetNodeLayout.AddChild(message3);
 
-            targetNodePaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
+            targetNodePaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(10, 25, 10, 10), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
             drawCustomTargetNode();
             targetNodeLayout.AddChild(targetNodePaneLayout);
 
@@ -304,12 +304,48 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private void drawUserTargetNode()
         {
+            DialogGUILabel massTargetLabel = new DialogGUILabel(getTargetInfo, 120, 24);
 
+            targetNodePaneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { massTargetLabel }));
+        }
+
+        private string getTargetInfo()
+        {
+            ITargetable target;
+            Vessel activeVessel;
+
+            if (!HighLogic.LoadedSceneIsFlight)
+                return "Only in flight";
+            else if ((target = FlightGlobals.fetch.VesselTarget) == null)
+                return "Please designate your target";
+            else if (!(target is CelestialBody) && !(target is Vessel))
+                return "This target is neither vessel nor celestial body";
+
+            activeVessel = FlightGlobals.fetch.activeVessel;
+
+            string message = string.Format("Target: {0} ({1})\n", target.GetName(), target.GetType());
+            message += string.Format("Distance: {0}m\n", UiUtils.RoundToNearestMetricFactor(Vector3d.Distance(activeVessel.transform.position, target.GetTransform().position)));
+            message += string.Format("Com power: {0}", (target is Vessel)? UiUtils.RoundToNearestMetricFactor(123456) : "Nil"); // replace it when target vessel has RT interface
+
+            return message;
         }
 
         private void drawDSNTargetNode()
         {
+            //TrackingStationBuilding.
+            List<DialogGUIToggle> DSNLevels = new List<DialogGUIToggle>();
 
+            int numLevels = ScenarioUpgradeableFacilities.GetFacilityLevelCount(SpaceCenterFacility.TrackingStation) + 1; // why is GetFacilityLevelCount zero-index??
+            for (int lvl = 0; lvl < numLevels; lvl++)
+            {
+                float normalizedLevel = (1f / numLevels) * lvl;
+                DialogGUIToggle DSNLevel = new DialogGUIToggle(false, string.Format("Level {0} - Max DSN Power: {1}", lvl+1, UiUtils.RoundToNearestMetricFactor(GameVariables.Instance.GetDSNRange(normalizedLevel))), delegate (bool b) { });
+                DSNLevels.Add(DSNLevel);
+            }
+
+            DialogGUIToggleGroup DSNLevelGroup = new DialogGUIToggleGroup(DSNLevels.ToArray());
+
+            targetNodePaneLayout.AddChild(new DialogGUIVerticalLayout(true, false, 4, new RectOffset(), TextAnchor.UpperLeft, new DialogGUIBase[] { DSNLevelGroup }));
         }
 
         private void antennaSelected(bool toggleState, int indexAntenna)
