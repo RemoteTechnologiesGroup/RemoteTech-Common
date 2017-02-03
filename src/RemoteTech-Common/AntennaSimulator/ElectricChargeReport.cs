@@ -15,15 +15,13 @@ namespace RemoteTech.Common.AntennaSimulator
         public double lockedCapacity = 0;
         public double consumptionRate = 0.0;
         public double productionRate = 0.0;
-        //public double antennaRate = 0.0;
         public double estimatedOverallRate = 0.0;
 
-        private PartResourceDefinition ecResDef;
+        private PartResourceDefinition ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
 
         public ElectricChargeReport(List<Part> parts)
         {
             traverse(parts);
-            this.ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
         }
 
         private void traverse(List<Part> parts)
@@ -33,25 +31,10 @@ namespace RemoteTech.Common.AntennaSimulator
                 Part thisPart = parts[i];
 
                 // consumer except for antenna, whose state is determined by user
-                /*
-                bool antennaInUseState = true;
-                ModuleDataTransmitter antennaModule;
-                if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
-                {
-                    ModuleDeployableAntenna delayModule;
-                    if ((delayModule = thisPart.FindModuleImplementing<ModuleDeployableAntenna>()) != null)
-                        antennaInUseState = (delayModule.deployState == ModuleDeployablePart.DeployState.EXTENDED);
-
-                    if(antennaInUseState)
-                    {
-                        antennaRate += antennaModule.DataResourceCost;
-                    }
-                }
-                */
                 List<IResourceConsumer> rcs;
                 if ((rcs = thisPart.Modules.GetModules<IResourceConsumer>().FindAll(a => a.GetConsumedResources().Contains(this.ecResDef))) != null)
                 {
-                    for(int a=0; a< rcs.Count; a++)
+                    for(int a=0; a< rcs.Count; a++) // TODO: finish this consumer part
                     {
                         //consumptionRate += rcs[a].GetConsumedResources()
                         //thisPart.resHan
@@ -60,11 +43,11 @@ namespace RemoteTech.Common.AntennaSimulator
 
                 // producer
                 ModuleDeployableSolarPanel solarModule;
-                if ((solarModule = thisPart.FindModuleImplementing<ModuleDeployableSolarPanel>()) != null)
+                if ((solarModule = thisPart.FindModuleImplementing<ModuleDeployableSolarPanel>()) != null) // solar panels
                 {
                     productionRate += solarModule.flowRate;
                 }
-                if (thisPart.name != "launchClamp1" && thisPart.FindModuleImplementing<ModuleGenerator>() != null)
+                if (thisPart.name != "launchClamp1" && thisPart.FindModuleImplementing<ModuleGenerator>() != null) // RTG
                 {
                     ModuleGenerator genModule = thisPart.FindModuleImplementing<ModuleGenerator>();
 
@@ -74,7 +57,7 @@ namespace RemoteTech.Common.AntennaSimulator
                         productionRate += res.rate;
                     }
                 }
-                if (thisPart.FindModuleImplementing<ModuleResourceConverter>() != null)
+                if (thisPart.FindModuleImplementing<ModuleResourceConverter>() != null) // Fuel cells sucking from fuel tanks
                 {
                     ModuleResourceConverter conModule = thisPart.FindModuleImplementing<ModuleResourceConverter>();
 
@@ -84,7 +67,7 @@ namespace RemoteTech.Common.AntennaSimulator
                         productionRate += resRatio.Ratio;
                     }
                 }
-                if (thisPart.FindModuleImplementing<ModuleAlternator>() != null)
+                if (thisPart.FindModuleImplementing<ModuleAlternator>() != null) // rocket engine running
                 {
                     ModuleAlternator altModule = thisPart.FindModuleImplementing<ModuleAlternator>();
                     productionRate += altModule.outputRate;

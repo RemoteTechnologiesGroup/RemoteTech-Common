@@ -408,6 +408,7 @@ namespace RemoteTech.Common.AntennaSimulator
         //------------------------------------
         private float totalScienceDataSize = 0;
         private float customScienceDataSize = 0;
+        private bool customDataInputSelected = false;
         private float antennaBandwidthPerSec;
         private double antennaChargePerSec;
 
@@ -448,8 +449,15 @@ namespace RemoteTech.Common.AntennaSimulator
             antennaLayout.AddChild(new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true));
 
             DialogGUIToggleGroup antennaGroup = new DialogGUIToggleGroup();
-            DialogGUIVerticalLayout bandwidthColumn = new DialogGUIVerticalLayout();
-            DialogGUIVerticalLayout transmissionColumn = new DialogGUIVerticalLayout();
+            DialogGUIVerticalLayout antennaColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
+            DialogGUIVerticalLayout bandwidthColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
+            DialogGUIVerticalLayout transmissionColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
+            UIStyle style = new UIStyle();
+            style.alignment = TextAnchor.MiddleLeft;
+            style.fontStyle = FontStyle.Normal;
+            style.normal = new UIStyleState();
+            style.normal.textColor = Color.white;
+
             for (int i = 0; i < parts.Count; i++)
             {
                 Part thisPart = parts[i];
@@ -461,16 +469,17 @@ namespace RemoteTech.Common.AntennaSimulator
                 ModuleDataTransmitter antennaModule;
                 if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
                 {
-                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, thisPart.partInfo.title, delegate (bool b) { scienceAntennaSelected(b, antennaModule.DataRate, antennaModule.DataResourceCost); });
-                    DialogGUILabel bandwidth = new DialogGUILabel(string.Format("Bandwidth: {0:0.00} charge/s", antennaModule.DataRate));
-                    DialogGUILabel rate = new DialogGUILabel(string.Format("Transmission: {0:0.00} charge/s", antennaModule.DataResourceCost));
+                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, thisPart.partInfo.title, delegate (bool b) { scienceAntennaSelected(b, antennaModule.DataRate, antennaModule.DataResourceCost); }, 150, 32);
+                    DialogGUILabel bandwidth = new DialogGUILabel(string.Format("Bandwidth: {0:0.00} charge/s", antennaModule.DataRate), style); bandwidth.size = new Vector2(150, 32);
+                    DialogGUILabel rate = new DialogGUILabel(string.Format("Transmission: {0:0.00} charge/s", antennaModule.DataResourceCost), style); rate.size = new Vector2(150, 32);
 
                     antennaGroup.AddChild(toggleBtn);
                     bandwidthColumn.AddChild(bandwidth);
                     transmissionColumn.AddChild(rate);
                 }
             }
-            antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaGroup, bandwidthColumn, transmissionColumn }));
+            antennaColumn.AddChild(antennaGroup);
+            antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, bandwidthColumn, transmissionColumn }));
 
             DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(dialogWidth - 50, dialogHeight / 4), false, true, antennaLayout);
             contentPaneLayout.AddChild(antennaScrollPane);
@@ -495,6 +504,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private void customScienceSelected(bool toggleState)
         {
+            customDataInputSelected = toggleState;
             if (toggleState)
             {
                 totalScienceDataSize += customScienceDataSize;
@@ -507,8 +517,14 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private string customScienceInput(string userInput)
         {
-            if (!float.TryParse(userInput, out customScienceDataSize))
-                customScienceDataSize = 0;
+            float newInputData = 0f;
+            bool success = float.TryParse(userInput, out newInputData);
+            if(success && customDataInputSelected)
+            {
+                totalScienceDataSize -= customScienceDataSize;
+                totalScienceDataSize += newInputData;
+                customScienceDataSize = newInputData;
+            }
 
             return customScienceDataSize.ToString(); // DialogGUITextInput never uses the returned string.
         }
