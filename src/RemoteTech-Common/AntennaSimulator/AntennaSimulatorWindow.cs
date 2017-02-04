@@ -69,6 +69,19 @@ namespace RemoteTech.Common.AntennaSimulator
             return contentComponents;
         }
 
+        protected override void OnUpdate() // forget about MultiOptionDialog's FixedUpdate because it is inaccessible
+        {
+            base.OnUpdate();
+
+            List<Part> parts;
+            if (HighLogic.LoadedSceneIsFlight)
+                parts = FlightGlobals.ActiveVessel.Parts;
+            else
+                parts = EditorLogic.fetch.ship.Parts;
+
+            ecReport = new ElectricChargeReport(parts);
+        }
+
         protected override void OnAwake(object[] args)
         {
             displayContent(InfoContent.RANGE); // the info panel a player sees for the first time
@@ -581,7 +594,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
             message += "<b>Electric charge flow</b>\n";
             message += string.Format("Production rate: {0:0.0} charge/s", ecReport.productionRate) + "\n";
-            message += string.Format("Consumption rate: {0:0.0} charge/s (antenna drain: {1:0.0})", ecReport.consumptionRate + vesselAntennaDrainPower, vesselAntennaDrainPower) + "\n";
+            message += string.Format("Consumption rate: {0:0.0} charge/s (antenna drain: {1:0.0})", ecReport.consumptionRateWOAntenna + vesselAntennaDrainPower, vesselAntennaDrainPower) + "\n";
             message += string.Format("Overall rate: {0:0.0} charge/s", ecReport.estimatedOverallRate - vesselAntennaDrainPower) + "\n";
 
             return message;

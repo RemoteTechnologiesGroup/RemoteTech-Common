@@ -9,15 +9,14 @@ namespace RemoteTech.Common.AntennaSimulator
     public class ElectricChargeReport
     {
         public static readonly string ECName = "ElectricCharge";
+        private static PartResourceDefinition ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
 
-        public double maxCapacity = 0;
-        public double currentCapacity = 0;
-        public double lockedCapacity = 0;
-        public double consumptionRate = 0.0;
+        public double maxCapacity = 0.0;
+        public double currentCapacity = 0.0;
+        public double lockedCapacity = 0.0;
+        public double consumptionRateWOAntenna = 0.0;
         public double productionRate = 0.0;
         public double estimatedOverallRate = 0.0;
-
-        private PartResourceDefinition ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
 
         public ElectricChargeReport(List<Part> parts)
         {
@@ -30,62 +29,71 @@ namespace RemoteTech.Common.AntennaSimulator
             {
                 Part thisPart = parts[i];
 
-                // consumer except for antenna, whose state is determined by user
-                List<IResourceConsumer> rcs;
-                if ((rcs = thisPart.Modules.GetModules<IResourceConsumer>().FindAll(a => a.GetConsumedResources().Contains(this.ecResDef))) != null)
+                for(int x=0; x< thisPart.Modules.Count; x++)
                 {
-                    for(int a=0; a< rcs.Count; a++) // TODO: finish this consumer part
-                    {
-                        //consumptionRate += rcs[a].GetConsumedResources()
-                        //thisPart.resHan
-                    }
+                    readConsumerData(thisPart.Modules[x], thisPart);
+                    readProducerData(thisPart.Modules[x], thisPart);
                 }
 
-                // producer
-                ModuleDeployableSolarPanel solarModule;
-                if ((solarModule = thisPart.FindModuleImplementing<ModuleDeployableSolarPanel>()) != null) // solar panels
+                readStorageData(thisPart);
+            }
+        }
+
+        private void readConsumerData(PartModule thisModule, Part thisPart)
+        {
+            if(thisModule is ModuleReactionWheel)
+            {
+                //Not possible to get realtime consumption rate
+                //ModuleReactionWheel rw = thisModule as ModuleReactionWheel;
+                //consumptionRateWOAntenna += rw.resHandler.inputResources.Find(x => x.name == ECName).rate;
+            }
+        }
+
+        private void readProducerData(PartModule thisModule, Part thisPart)
+        {
+            if(thisModule is ModuleDeployableSolarPanel)
+            {
+                ModuleDeployableSolarPanel solarModule = thisModule as ModuleDeployableSolarPanel;
+                productionRate += solarModule.flowRate;
+            }
+            if (thisPart.name != "launchClamp1" && thisModule is ModuleGenerator) // RTG
+            {
+                ModuleGenerator genModule = thisModule as ModuleGenerator;
+                if (genModule.generatorIsActive)
                 {
-                    productionRate += solarModule.flowRate;
+                    ModuleResource res = genModule.resHandler.outputResources.Find(x => x.name == ECName);
+                    productionRate += res.rate;
                 }
-                if (thisPart.name != "launchClamp1" && thisPart.FindModuleImplementing<ModuleGenerator>() != null) // RTG
+            }
+            if (thisModule is ModuleResourceConverter) // Fuel cell sucking from fuel tanks
+            {
+                ModuleResourceConverter conModule = thisModule as ModuleResourceConverter;
+                if (conModule.IsActivated)
                 {
-                    ModuleGenerator genModule = thisPart.FindModuleImplementing<ModuleGenerator>();
-
-                    if (genModule.generatorIsActive)
-                    {
-                        ModuleResource res = genModule.resHandler.outputResources.Find(x => x.name == ECName);
-                        productionRate += res.rate;
-                    }
+                    ResourceRatio resRatio = conModule.outputList.Find(x => x.ResourceName == ECName);
+                    productionRate += resRatio.Ratio;
                 }
-                if (thisPart.FindModuleImplementing<ModuleResourceConverter>() != null) // Fuel cells sucking from fuel tanks
+            }
+            if (thisModule is ModuleAlternator) // rocket engine running
+            {
+                ModuleAlternator altModule = thisModule as ModuleAlternator;
+                productionRate += altModule.outputRate;
+            }
+        }
+
+        private void readStorageData(Part thisPart)
+        {
+            if (thisPart.Resources.Count >= 1)
+            {
+                if (thisPart.Resources.Contains(ECName))
                 {
-                    ModuleResourceConverter conModule = thisPart.FindModuleImplementing<ModuleResourceConverter>();
+                    PartResource ec = thisPart.Resources.Get(ECName);
 
-                    if (conModule.IsActivated)
-                    {
-                        ResourceRatio resRatio = conModule.outputList.Find(x => x.ResourceName == ECName);
-                        productionRate += resRatio.Ratio;
-                    }
-                }
-                if (thisPart.FindModuleImplementing<ModuleAlternator>() != null) // rocket engine running
-                {
-                    ModuleAlternator altModule = thisPart.FindModuleImplementing<ModuleAlternator>();
-                    productionRate += altModule.outputRate;
-                }
+                    maxCapacity += ec.maxAmount;
+                    currentCapacity += ec.amount;
 
-                // storage
-                if (thisPart.Resources.Count >= 1)
-                {
-                    if (thisPart.Resources.Contains(ECName))
-                    {
-                        PartResource ec = thisPart.Resources.Get(ECName);
-
-                        maxCapacity += ec.maxAmount;
-                        currentCapacity += ec.amount;
-
-                        if (!ec.flowState)
-                            lockedCapacity += ec.amount;
-                    }
+                    if (!ec.flowState)
+                        lockedCapacity += ec.amount;
                 }
             }
         }
