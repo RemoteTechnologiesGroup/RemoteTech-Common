@@ -588,14 +588,18 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private string getPowerReportMessage()
         {
-            string message = "<b>Storage of electric charge</b>\n";
-            message += string.Format("Current usable storage: {0:0.0} / {1:0.0} charge", ecReport.currentCapacity - ecReport.lockedCapacity, ecReport.maxCapacity) + "\n";
-            message += string.Format("Reserved storage: {0:0.0} charge", ecReport.lockedCapacity) +"\n\n";
+            string message = "";
+
+            message += ElectricChargeReport.description+"\n\n";
+
+            message += "<b>Storage of electric charge</b>\n";
+            message += string.Format("Current usable storage: {0:0.0} / {1:0.0} charge\n", ecReport.currentCapacity - ecReport.lockedCapacity, ecReport.maxCapacity);
+            message += string.Format("Reserved storage: {0:0.0} charge\n\n", ecReport.lockedCapacity);
 
             message += "<b>Electric charge flow</b>\n";
-            message += string.Format("Production rate: {0:0.0} charge/s", ecReport.productionRate) + "\n";
-            message += string.Format("Consumption rate: {0:0.0} charge/s (antenna drain: {1:0.0})", ecReport.consumptionRateWOAntenna + vesselAntennaDrainPower, vesselAntennaDrainPower) + "\n";
-            message += string.Format("Overall rate: {0:0.0} charge/s", ecReport.estimatedOverallRate - vesselAntennaDrainPower) + "\n";
+            message += string.Format("Estimated production rate: {0:0.00} charge/s\n", ecReport.productionRate);
+            message += string.Format("Estimated consumption rate: {0:0.00} charge/s (antenna drain: {1:0.00})\n", ecReport.consumptionRateWOAntenna + vesselAntennaDrainPower, vesselAntennaDrainPower);
+            message += string.Format("Overall rate: {0:0.00} charge/s", ecReport.overallRateWOAntenna - vesselAntennaDrainPower);
 
             return message;
         }

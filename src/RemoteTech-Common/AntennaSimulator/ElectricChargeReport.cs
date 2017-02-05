@@ -1,25 +1,48 @@
-﻿using System;
+﻿using ModuleWheels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace RemoteTech.Common.AntennaSimulator
 {
-    // Note: Not intended to be simple and approx report not full-fledged funcitonality
+    // Note: Intended to be simple and approx report, not full-fledged functionality
+    // Credit: Ratzap's Fusebox for references
+    public class ElectricChargeReportFixedUpdate : MonoBehaviour
+    {
+        public void FixedUpdate()
+        {
+            //TODO: spawn momobehaviour and measure the flow in fixedupdate
+        }
+    }
+
     public class ElectricChargeReport
     {
+        public enum ContextMode { EDITOR, FLIGHT }
+
         public static readonly string ECName = "ElectricCharge";
         private static PartResourceDefinition ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
+        public static readonly string description = "<color=red>Warning:</color> This power-measurement functionality is simple and approximate. For example, solar panels in the editor are ignored because there is no sun there.";
 
+        public ContextMode mode;
         public double maxCapacity = 0.0;
         public double currentCapacity = 0.0;
         public double lockedCapacity = 0.0;
         public double consumptionRateWOAntenna = 0.0;
         public double productionRate = 0.0;
-        public double estimatedOverallRate = 0.0;
+        public double overallRateWOAntenna
+        {
+            get { return productionRate - consumptionRateWOAntenna; }
+        }
 
         public ElectricChargeReport(List<Part> parts)
         {
+            if (HighLogic.LoadedSceneIsFlight)
+                mode = ContextMode.FLIGHT;
+            else
+                mode = ContextMode.EDITOR;
+
             traverse(parts);
         }
 
@@ -43,9 +66,106 @@ namespace RemoteTech.Common.AntennaSimulator
         {
             if(thisModule is ModuleReactionWheel)
             {
-                //Not possible to get realtime consumption rate
-                //ModuleReactionWheel rw = thisModule as ModuleReactionWheel;
-                //consumptionRateWOAntenna += rw.resHandler.inputResources.Find(x => x.name == ECName).rate;
+                //cannot get even approximate rate
+            }
+            else if (thisModule is ModuleCommand) // unmanned probes consuming charge
+            {
+                ModuleCommand mc = thisModule as ModuleCommand;
+                ModuleResource mr = mc.resHandler.inputResources.Find(x => x.name == ECName);
+                if (mr != null)
+                    consumptionRateWOAntenna += mr.rate;
+            }
+            else if (thisModule is ModuleEnginesFX) // ion engine
+            {
+                ModuleEnginesFX efx = thisModule as ModuleEnginesFX;
+                Propellant ecProp = efx.propellants.Find(x => x.name == ECName);
+                if (ecProp != null && this.mode == ContextMode.FLIGHT && efx.isOperational)
+                {
+                    float massFlowRate = (efx.currentThrottle * efx.maxThrust) / (efx.atmosphereCurve.Evaluate(0) * 9.81f); // TODO: wrong calculate
+                    consumptionRateWOAntenna += (ecProp.ratio * massFlowRate);
+                }
+            }
+            else if (thisModule is ModuleLight)
+            {
+                ModuleLight ml = thisModule as ModuleLight;
+                ModuleResource mr = ml.resHandler.inputResources.Find(x => x.name == ECName);
+                if (mr != null)
+                {
+                    if((ml.isOn && this.mode == ContextMode.FLIGHT) || this.mode == ContextMode.EDITOR)
+                        consumptionRateWOAntenna += mr.rate;
+                }
+            }
+            else if (thisPart.name != "launchClamp1" && thisModule is ModuleGenerator) // maybe third-party parts?
+            {
+                ModuleGenerator genModule = thisModule as ModuleGenerator;
+                ModuleResource res = genModule.resHandler.inputResources.Find(x => x.name == ECName);
+                if (res != null)
+                {
+                    if (this.mode == ContextMode.FLIGHT)
+                    {
+                        if (genModule.generatorIsActive || genModule.isAlwaysActive)
+                            consumptionRateWOAntenna += res.rate;
+                    }
+                    else
+                    {
+                        consumptionRateWOAntenna += res.rate;
+                    }
+                }
+            }
+            else if(thisModule is ModuleWheelMotor)
+            {
+                //cannot get even approximate rate
+            }
+            else if(thisModule is ModuleActiveRadiator)
+            {
+                ModuleActiveRadiator ar = thisModule as ModuleActiveRadiator;
+                ModuleResource res = ar.resHandler.inputResources.Find(x => x.name == ECName);
+                if(res != null)
+                {
+                    if(this.mode == ContextMode.FLIGHT && ar.IsCooling)
+                    {
+                        consumptionRateWOAntenna += res.rate;
+                    }
+                }
+            }
+            else if(thisModule is ModuleEnviroSensor)
+            {
+                ModuleEnviroSensor es = thisModule as ModuleEnviroSensor;
+                ModuleResource res = es.resHandler.inputResources.Find(x => x.name == ECName);
+                if (res != null)
+                {
+                    consumptionRateWOAntenna += res.rate;
+                }
+            }
+            else if(thisModule is ModuleResourceConverter)
+            {
+                ModuleResourceConverter rc = thisModule as ModuleResourceConverter;
+                ResourceRatio ratio = rc.inputList.Find(x => x.ResourceName == ECName);
+                if (this.mode == ContextMode.FLIGHT)
+                {
+                    if (rc.IsActivated || rc.AlwaysActive)
+                        consumptionRateWOAntenna += ratio.Ratio;
+                }
+            }
+            else if (thisModule is ModuleResourceHarvester)
+            {
+                ModuleResourceHarvester rh = thisModule as ModuleResourceHarvester;
+                ResourceRatio ratio = rh.inputList.Find(x => x.ResourceName == ECName);
+                if (this.mode == ContextMode.FLIGHT)
+                {
+                    if (rh.IsActivated || rh.AlwaysActive)
+                        consumptionRateWOAntenna += ratio.Ratio;
+                }
+            }
+            else if(thisModule is ModuleAsteroidDrill)
+            {
+                ModuleAsteroidDrill ad = thisModule as ModuleAsteroidDrill;
+                ResourceRatio ratio = ad.inputList.Find(x => x.ResourceName == ECName);
+                if (this.mode == ContextMode.FLIGHT)
+                {
+                    if (ad.IsActivated || ad.AlwaysActive)
+                        consumptionRateWOAntenna += ratio.Ratio;
+                }
             }
         }
 
@@ -54,30 +174,46 @@ namespace RemoteTech.Common.AntennaSimulator
             if(thisModule is ModuleDeployableSolarPanel)
             {
                 ModuleDeployableSolarPanel solarModule = thisModule as ModuleDeployableSolarPanel;
-                productionRate += solarModule.flowRate;
+                if (this.mode == ContextMode.FLIGHT)
+                    productionRate += solarModule.flowRate;
+                // can't use chargeRate attribute because it could give false security in editor (all panels output the full rate)
             }
-            if (thisPart.name != "launchClamp1" && thisModule is ModuleGenerator) // RTG
+            else if (thisPart.name != "launchClamp1" && thisModule is ModuleGenerator) // RTG
             {
                 ModuleGenerator genModule = thisModule as ModuleGenerator;
-                if (genModule.generatorIsActive)
+                ModuleResource res = genModule.resHandler.outputResources.Find(x => x.name == ECName);
+                if (res != null)
                 {
-                    ModuleResource res = genModule.resHandler.outputResources.Find(x => x.name == ECName);
-                    productionRate += res.rate;
+                    if (this.mode == ContextMode.FLIGHT)
+                    {
+                        if (genModule.generatorIsActive || genModule.isAlwaysActive)
+                            productionRate += res.rate;
+                    }
+                    else
+                    {
+                        productionRate += res.rate;
+                    }
                 }
             }
-            if (thisModule is ModuleResourceConverter) // Fuel cell sucking from fuel tanks
+            else if (thisModule is ModuleResourceConverter) // Fuel cell sucking from fuel tanks
             {
                 ModuleResourceConverter conModule = thisModule as ModuleResourceConverter;
-                if (conModule.IsActivated)
+                ResourceRatio resRatio = conModule.outputList.Find(x => x.ResourceName == ECName); // struct type so can't be null
+                if (this.mode == ContextMode.FLIGHT)
                 {
-                    ResourceRatio resRatio = conModule.outputList.Find(x => x.ResourceName == ECName);
+                    if (conModule.IsActivated || conModule.AlwaysActive)
+                        productionRate += resRatio.Ratio;
+                }
+                else
+                {
                     productionRate += resRatio.Ratio;
                 }
             }
-            if (thisModule is ModuleAlternator) // rocket engine running
+            else if (thisModule is ModuleAlternator) // rocket engine running
             {
                 ModuleAlternator altModule = thisModule as ModuleAlternator;
-                productionRate += altModule.outputRate;
+                if (this.mode == ContextMode.FLIGHT)
+                    productionRate += altModule.outputRate;
             }
         }
 
