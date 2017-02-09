@@ -25,5 +25,14 @@ namespace RemoteTech.Common.Utils
             Logging.Error($"Cannot Find Texture: {textureFileName}");
             return Texture2D.blackTexture;
         }
+
+        /// <summary>
+        /// Cursor detection within the given window
+        /// </summary>
+        public static bool ContainsMouse(Rect window)
+        {
+            return window.Contains(new Vector2(Input.mousePosition.x,
+                Screen.height - Input.mousePosition.y));
+        }
     }
 }

@@ -4,22 +4,41 @@ using UnityEngine;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
+    /// <summary>
+    /// Customise the home nodes
+    /// </summary>
     public class RemoteTechCommNetHome : CommNetHome
     {
         private static readonly Texture2D markTexture = UiUtils.LoadTexture("groundStationMark");
+        private static GUIStyle groundStationHeadline;
+        private bool loadCompleted = false;
 
         public void copyOf(CommNetHome stockHome)
         {
+            Logging.Info("CommNet Home '{0}' added", stockHome.nodeName);
+
             this.nodeName = stockHome.nodeName;
             this.nodeTransform = stockHome.nodeTransform;
             this.isKSC = stockHome.isKSC;
-            //this.comm = stockHome.GetComponentInChildren<CommNode>(); // maybe too early as it is null at beginning
-            //this.body = stockHome.GetComponentInChildren<CelestialBody>(); // maybe too early as it is null at beginning
+            this.body = stockHome.GetComponentInParent<CelestialBody>();
+
+            //comm, lat, alt, lon are initialised by CreateNode() later
+
+            groundStationHeadline = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 12,
+                normal = { textColor = Color.yellow }
+            };
+
+            loadCompleted = true;
         }
 
+        /// <summary>
+        /// Draw graphic components on screen like RemoteTech's ground-station marks
+        /// </summary>
         public void OnGUI()
         {
-            if (GameUtil.IsGameScenario)
+            if (GameUtil.IsGameScenario || !loadCompleted)
                 return;
 
             if (!(HighLogic.LoadedScene == GameScenes.FLIGHT || HighLogic.LoadedScene == GameScenes.TRACKSTATION))
@@ -29,20 +48,36 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 return;
 
             var worldPos = ScaledSpace.LocalToScaledSpace(nodeTransform.transform.position);
-            if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f) return;
-            var pos = PlanetariumCamera.Camera.WorldToScreenPoint(worldPos);
-            var screenRect = new Rect((pos.x - 8), (Screen.height - pos.y) - 8, 16, 16);
+
+            if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f)
+                return;
+
+            var position = PlanetariumCamera.Camera.WorldToScreenPoint(worldPos);
+            var groundStationRect = new Rect((position.x - 8), (Screen.height - position.y) - 8, 16, 16);
 
             if (IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
-            if (!IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
+            if (!IsOccluded(nodeTransform.transform.position, this.body) && MapView.MapCamera.Distance > MapView.fetch.max3DlineDrawDist)
                 return;
 
+            //draw the dot
             var previousColor = GUI.color;
             GUI.color = Color.red; // TODO: switch to customised colors when RTSetting goes live
-            GUI.DrawTexture(screenRect, markTexture, ScaleMode.ScaleToFit, true);
+            GUI.DrawTexture(groundStationRect, markTexture, ScaleMode.ScaleToFit, true);
             GUI.color = previousColor;
+
+            //draw the headline below the dot
+            if (UiUtils.ContainsMouse(groundStationRect))
+            {
+                var headlineRect = groundStationRect;
+                var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
+                headlineRect.x -= nameDim.x / 2;
+                headlineRect.y -= nameDim.y + 5;
+                headlineRect.width = nameDim.x;
+                headlineRect.height = nameDim.y;
+                GUI.Label(headlineRect, this.nodeName, RemoteTechCommNetHome.groundStationHeadline);
+            }
         }
 
         /// <summary>
@@ -56,22 +91,6 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (Vector3d.Angle(camPos - loc, body.position - loc) > 90)
                 return false;
             return true;
-        }
-
-        /// <summary>
-        /// Calculates the distance between the camera position and the ground station, and
-        /// returns true if the distance is >= DistanceToHideGroundStations from the settings file.
-        /// </summary>
-        /// <param name="loc">Position of the ground station</param>
-        /// <returns>True if the distance is to wide, otherwise false</returns>
-        private bool IsCamDistanceToWide(Vector3d loc)
-        {
-            var camPos = ScaledSpace.ScaledToLocalSpace(PlanetariumCamera.Camera.transform.position);
-            float distance = Vector3.Distance(camPos, loc);
-
-            if (distance >= 30000000) // TODO: replace this when RTSetting goes live
-                return true;
-            return false;
         }
     }
 }
