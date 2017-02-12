@@ -21,7 +21,7 @@ namespace RemoteTech.Common.AntennaSimulator
         private DialogGUIVerticalLayout contentPaneLayout;
         private DialogGUIVerticalLayout targetNodePaneLayout;
 
-        private ElectricChargeReport ecReport;
+        private ElectricChargeReport chargeReport;
         private List<ModuleDataTransmitter> antennaModules = new List<ModuleDataTransmitter>();
 
         private static readonly int dialogWidth = 650;
@@ -69,22 +69,24 @@ namespace RemoteTech.Common.AntennaSimulator
             return contentComponents;
         }
 
-        protected override void OnUpdate() // forget about MultiOptionDialog's FixedUpdate because it is inaccessible
+        protected override void OnAwake(object[] args)
         {
-            base.OnUpdate();
-
             List<Part> parts;
             if (HighLogic.LoadedSceneIsFlight)
                 parts = FlightGlobals.ActiveVessel.Parts;
             else
                 parts = EditorLogic.fetch.ship.Parts;
 
-            ecReport = new ElectricChargeReport(parts);
+            chargeReport = new ElectricChargeReport();
+            chargeReport.monitor(parts);
+
+            displayContent(InfoContent.RANGE); // the info panel a player sees for the first time
         }
 
-        protected override void OnAwake(object[] args)
+        protected override void OnPreDismiss()
         {
-            displayContent(InfoContent.RANGE); // the info panel a player sees for the first time
+            base.OnPreDismiss();
+            chargeReport.terminate();
         }
 
         private void registerContentComponents(DialogGUIVerticalLayout layout)
@@ -149,8 +151,6 @@ namespace RemoteTech.Common.AntennaSimulator
                 parts = FlightGlobals.ActiveVessel.Parts;
             else
                 parts = EditorLogic.fetch.ship.Parts;
-
-            ecReport = new ElectricChargeReport(parts);
 
             deleteContentComponents(contentPaneLayout);
             switch (whichContent)
@@ -400,7 +400,7 @@ namespace RemoteTech.Common.AntennaSimulator
         private string getWarningPowerMessage()
         {
             if (true)
-                return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (ecReport.currentCapacity-ecReport.lockedCapacity)/vesselAntennaDrainPower);
+                return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (chargeReport.currentCapacity-chargeReport.lockedCapacity)/(chargeReport.flowRateWOAntenna + vesselAntennaDrainPower));
             else
                 return "Sustainable";
         }
@@ -562,7 +562,7 @@ namespace RemoteTech.Common.AntennaSimulator
             message += string.Format("Total power required: {0:0.0} charges for {1:0.00} seconds\n", cost, duration);
             message += string.Format("Science bonus from the signal strength ({0:0.00}%): {1}%\n\n", currentConnectionStrength, GameVariables.Instance.GetDSNScienceCurve().Evaluate(currentConnectionStrength) * 100);
 
-            if (ecReport.currentCapacity - cost < 0.0)
+            if (chargeReport.currentCapacity - cost < 0.0)
             {
                 message += "Transmission: <color=red>Insufficient power</color> to transmit all of the selected experiments";
             }
@@ -593,13 +593,15 @@ namespace RemoteTech.Common.AntennaSimulator
             message += ElectricChargeReport.description+"\n\n";
 
             message += "<b>Storage of electric charge</b>\n";
-            message += string.Format("Current usable storage: {0:0.0} / {1:0.0} charge\n", ecReport.currentCapacity - ecReport.lockedCapacity, ecReport.maxCapacity);
-            message += string.Format("Reserved storage: {0:0.0} charge\n\n", ecReport.lockedCapacity);
+            message += string.Format("Current usable storage: {0:0.00} / {1:0.00} charge\n", chargeReport.currentCapacity - chargeReport.lockedCapacity, chargeReport.maxCapacity);
+            message += string.Format("Reserved storage: {0:0.00} charge\n", chargeReport.lockedCapacity);
+            message += string.Format("Flow rate: {0:0.00} charge/s\n\n", chargeReport.vesselFlowRate);
 
-            message += "<b>Electric charge flow</b>\n";
-            message += string.Format("Estimated production rate: {0:0.00} charge/s\n", ecReport.productionRate);
-            message += string.Format("Estimated consumption rate: {0:0.00} charge/s (antenna drain: {1:0.00})\n", ecReport.consumptionRateWOAntenna + vesselAntennaDrainPower, vesselAntennaDrainPower);
-            message += string.Format("Overall rate: {0:0.00} charge/s", ecReport.overallRateWOAntenna - vesselAntennaDrainPower);
+            message += "<b>Antennas, producers and consumers</b>\n";
+            message += string.Format("Approx production rate: {0:0.00} charge/s\n", chargeReport.productionRate);
+            message += string.Format("Approx consumption rate: {0:0.00} charge/s\n", chargeReport.consumptionRateWOAntenna);
+            message += string.Format("Power drain of standby antennas selected: {0:0.00} charge/s\n", vesselAntennaDrainPower);
+            message += string.Format("Approx flow rate: {0:0.00} charge/s", chargeReport.flowRateWOAntenna - vesselAntennaDrainPower);
 
             return message;
         }
