@@ -58,7 +58,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
-            if (!IsOccluded(nodeTransform.transform.position, this.body) && MapView.MapCamera.Distance > MapView.fetch.max3DlineDrawDist)
+            if (!IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
                 return;
 
             //draw the dot
@@ -91,6 +91,22 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (Vector3d.Angle(camPos - loc, body.position - loc) > 90)
                 return false;
             return true;
+        }
+        
+        /// <summary>
+        /// Calculates the distance between the camera position and the ground station, and
+        /// returns true if the distance is >= DistanceToHideGroundStations from the settings file.
+        /// </summary>
+        /// <param name="loc">Position of the ground station</param>
+        /// <returns>True if the distance is to wide, otherwise false</returns>
+        private bool IsCamDistanceToWide(Vector3d loc)
+        {
+            var camPos = ScaledSpace.ScaledToLocalSpace(PlanetariumCamera.Camera.transform.position);
+            float distance = Vector3.Distance(camPos, loc);
+
+            if (distance >= 8000000) // TODO: replace this when RTSetting goes live
+                return true;
+            return false;
         }
     }
 }
