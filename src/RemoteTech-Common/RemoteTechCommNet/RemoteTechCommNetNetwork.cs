@@ -19,7 +19,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             Logging.Info("CommNet Network booting");
 
             CommNetNetwork.Instance = this;
-            CommNetNetwork.Instance.CommNet = new RemoteTechCommNetwork();
+            this.CommNet = new RemoteTechCommNetwork();
 
             if (HighLogic.LoadedScene == GameScenes.TRACKSTATION)
             {
@@ -27,7 +27,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
 
             GameEvents.OnGameSettingsApplied.Add(new EventVoid.OnEvent(this.ResetNetwork));
-            CommNetNetwork.Reset(); // Please retain this so that KSP can properly reset
+            ResetNetwork(); // Please retain this so that KSP can properly reset
         }
 
         protected new void ResetNetwork()
