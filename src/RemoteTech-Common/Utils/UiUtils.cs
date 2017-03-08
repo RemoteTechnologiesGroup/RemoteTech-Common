@@ -27,6 +27,15 @@ namespace RemoteTech.Common.Utils
             return Texture2D.blackTexture;
         }
 
+        /// <summary>
+        /// Cursor detection within the given window
+        /// </summary>
+        public static bool ContainsMouse(Rect window)
+        {
+            return window.Contains(new Vector2(Input.mousePosition.x,
+                Screen.height - Input.mousePosition.y));
+        }
+
         public static string RoundToNearestMetricFactor(double number)
         {
             if (number > Math.Pow(10, 9))
