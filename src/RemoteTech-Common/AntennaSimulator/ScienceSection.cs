@@ -1,26 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-using static RemoteTech.Common.AntennaSimulator.AntennaSimulatorWindow;
 
 namespace RemoteTech.Common.AntennaSimulator
 {
-    public class ScienceSection : SimulatorWindowSection
+    public class ScienceSection : SimulatorSection
     {
-        private float totalScienceDataSize = 0;
+        public float antennaBandwidthPerSec;
+        public double antennaChargePerSec;
+        public float totalScienceDataSize = 0;
         private float customScienceDataSize = 0;
         private bool customDataInputSelected = false;
-        private float antennaBandwidthPerSec;
-        private double antennaChargePerSec;
 
-        private AntennaSimulatorWindow primary;
+        public ScienceSection(AntennaSimulator simulator) : base(SimulationType.SCIENCE, simulator) { }
 
-        public override DialogGUIBase[] create(List<Part> parts, AntennaSimulatorWindow primary)
+        public override DialogGUIBase[] draw(List<Part> parts)
         {
-            this.primary = primary;
             List<DialogGUIBase> components = new List<DialogGUIBase>();
 
             if (ResearchAndDevelopment.Instance == null)
@@ -49,7 +45,7 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput);
             scienceLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { customToggleBtn, sizeInput, new DialogGUIFlexibleSpace() }));
 
-            DialogGUIScrollList scienceScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulatorWindow.dialogWidth - 50, AntennaSimulatorWindow.dialogHeight / 3), false, true, scienceLayout);
+            DialogGUIScrollList scienceScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 3), false, true, scienceLayout);
             components.Add(scienceScrollPane);
 
             // ANTENNA LIST
@@ -90,7 +86,7 @@ namespace RemoteTech.Common.AntennaSimulator
             antennaColumn.AddChild(antennaGroup);
             antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, bandwidthColumn, transmissionColumn }));
 
-            DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulatorWindow.dialogWidth - 50, AntennaSimulatorWindow.dialogHeight / 4), false, true, antennaLayout);
+            DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 4), false, true, antennaLayout);
             components.Add(antennaScrollPane);
 
             // RESULT
@@ -156,11 +152,14 @@ namespace RemoteTech.Common.AntennaSimulator
             double duration = totalScienceDataSize / antennaBandwidthPerSec;
             double cost = duration * antennaChargePerSec;
 
+            PowerSection pow = this.simulator.getSection(SimulationType.POWER) as PowerSection;
+            RangeSection ran = this.simulator.getSection(SimulationType.RANGE) as RangeSection;
+
             message += string.Format("Total science data: {0:0.0} Mits\n", totalScienceDataSize);
             message += string.Format("Total power required: {0:0.0} charges for {1:0.00} seconds\n", cost, duration);
-            message += string.Format("Science bonus from the signal strength ({0:0.00}%): {1}%\n\n", this.primary.currentConnectionStrength, GameVariables.Instance.GetDSNScienceCurve().Evaluate(this.primary.currentConnectionStrength) * 100);
+            message += string.Format("Science bonus from the signal strength ({0:0.00}%): {1}%\n\n", ran.currentConnectionStrength, GameVariables.Instance.GetDSNScienceCurve().Evaluate(ran.currentConnectionStrength) * 100);
 
-            if (((PowerSection)this.primary.sections[(short)InfoContent.POWER]).chargeReport.currentCapacity - cost < 0.0)
+            if (pow.PowerReport.currentCapacity - cost < 0.0)
             {
                 message += "Transmission: <color=red>Insufficient power</color> to transmit all of the selected experiments";
             }

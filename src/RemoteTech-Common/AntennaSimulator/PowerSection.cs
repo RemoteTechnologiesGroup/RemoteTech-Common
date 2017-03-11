@@ -5,14 +5,15 @@ using UnityEngine.UI;
 
 namespace RemoteTech.Common.AntennaSimulator
 {
-    public class PowerSection : SimulatorWindowSection
+    public class PowerSection : SimulatorSection
     {
-        public ElectricChargeReport chargeReport=null;
-        private AntennaSimulatorWindow primary;
+        private ElectricChargeReport chargeReport=null;
+        public ElectricChargeReport PowerReport { get{ return this.chargeReport; } }
 
-        public override DialogGUIBase[] create(List<Part> parts, AntennaSimulatorWindow primary)
+        public PowerSection(AntennaSimulator simulator) : base(SimulationType.POWER, simulator) { }
+
+        public override DialogGUIBase[] draw(List<Part> parts)
         {
-            this.primary = primary;
             this.chargeReport = new ElectricChargeReport();
             this.chargeReport.monitor(parts);
 
@@ -61,7 +62,7 @@ namespace RemoteTech.Common.AntennaSimulator
             if (chargeReport == null)
                 return "Probing the vessel parts...";
 
-            if (true) // LOOK!
+            if (true) // TODO: finish this
                 return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (chargeReport.currentCapacity - chargeReport.lockedCapacity) / (chargeReport.flowRateWOAntenna + this.primary.vesselAntennaDrainPower));
             else
                 return "Sustainable";
