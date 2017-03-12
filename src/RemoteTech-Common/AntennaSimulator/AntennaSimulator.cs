@@ -20,7 +20,8 @@ namespace RemoteTech.Common.AntennaSimulator
             this.simulator = simulator;
         }
 
-        public abstract DialogGUIBase[] draw(List<Part> parts);
+        public virtual void analyse(List<Part> parts) { }
+        public abstract DialogGUIBase[] draw();
         public virtual void awake() { }
         public virtual void destroy() { }
 
@@ -95,7 +96,7 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { displayContent(SimulationType.RANGE); }, false);
             DialogGUIButton scienceButton = new DialogGUIButton("Science data", delegate { displayContent(SimulationType.SCIENCE); }, false);
             DialogGUIButton powerButton = new DialogGUIButton("Power system", delegate { displayContent(SimulationType.POWER); }, false);
-            DialogGUIButton refreshButton = new DialogGUIButton("Refresh", delegate { displayContent(currentSectionType); }, false);
+            DialogGUIButton refreshButton = new DialogGUIButton("Reset", delegate { displayContent(currentSectionType); }, false);
 
             DialogGUIHorizontalLayout tabbedButtonRow = new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { rangeButton, powerButton });
             if (ResearchAndDevelopment.Instance != null)
@@ -135,8 +136,11 @@ namespace RemoteTech.Common.AntennaSimulator
             else
                 parts = EditorLogic.fetch.ship.Parts;
 
+            for (int i = 0; i < pageSections.Count; i++)
+                pageSections[i].analyse(parts);
+
             deregisterLayoutComponents(contentPaneLayout);
-            contentPaneLayout.AddChildren(getSection(newType).draw(parts));
+            contentPaneLayout.AddChildren(getSection(newType).draw());
             registerLayoutComponents(contentPaneLayout);
         }
 

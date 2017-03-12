@@ -13,9 +13,31 @@ namespace RemoteTech.Common.AntennaSimulator
         private float customScienceDataSize = 0;
         private bool customDataInputSelected = false;
 
+        private List<ModuleDataTransmitter> antennas = new List<ModuleDataTransmitter>();
+
         public ScienceSection(AntennaSimulator simulator) : base(SimulationType.SCIENCE, simulator) { }
 
-        public override DialogGUIBase[] draw(List<Part> parts)
+        public override void analyse(List<Part> parts)
+        {
+            antennas.Clear();
+
+            for (int i = 0; i < parts.Count; i++)
+            {
+                Part thisPart = parts[i];
+                if (thisPart.FindModuleImplementing<ModuleCommand>() != null)
+                {
+                    continue; // skip command part since it can't transmit data
+                }
+
+                ModuleDataTransmitter antennaModule;
+                if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
+                {
+                    antennas.Add(antennaModule);
+                }
+            }
+        }
+
+        public override DialogGUIBase[] draw()
         {
             List<DialogGUIBase> components = new List<DialogGUIBase>();
 
@@ -63,26 +85,22 @@ namespace RemoteTech.Common.AntennaSimulator
             style.normal = new UIStyleState();
             style.normal.textColor = Color.white;
 
-            for (int i = 0; i < parts.Count; i++)
+            for(int i=0; i< antennas.Count; i++)
             {
-                Part thisPart = parts[i];
-                if (thisPart.FindModuleImplementing<ModuleCommand>() != null)
-                {
-                    continue; // skip command part since it can't transmit data
-                }
+                ModuleDataTransmitter antenna = antennas[i];
 
-                ModuleDataTransmitter antennaModule;
-                if ((antennaModule = thisPart.FindModuleImplementing<ModuleDataTransmitter>()) != null)
-                {
-                    DialogGUIToggle toggleBtn = new DialogGUIToggle(false, thisPart.partInfo.title, delegate (bool b) { scienceAntennaSelected(b, antennaModule.DataRate, antennaModule.DataResourceCost); }, 150, 32);
-                    DialogGUILabel bandwidth = new DialogGUILabel(string.Format("Bandwidth: {0:0.00} charge/s", antennaModule.DataRate), style); bandwidth.size = new Vector2(150, 32);
-                    DialogGUILabel rate = new DialogGUILabel(string.Format("Transmission: {0:0.00} charge/s", antennaModule.DataResourceCost), style); rate.size = new Vector2(150, 32);
+                if(i==0)
+                    scienceAntennaSelected(true, antenna.DataRate, antenna.DataResourceCost);
 
-                    antennaGroup.AddChild(toggleBtn);
-                    bandwidthColumn.AddChild(bandwidth);
-                    transmissionColumn.AddChild(rate);
-                }
+                DialogGUIToggle toggleBtn = new DialogGUIToggle(i==0?true:false, antenna.part.partInfo.title, delegate (bool b) { scienceAntennaSelected(b, antenna.DataRate, antenna.DataResourceCost); }, 150, 32);
+                DialogGUILabel bandwidth = new DialogGUILabel(string.Format("Bandwidth: {0:0.00} charge/s", antenna.DataRate), style); bandwidth.size = new Vector2(150, 32);
+                DialogGUILabel rate = new DialogGUILabel(string.Format("Transmission: {0:0.00} charge/s", antenna.DataResourceCost), style); rate.size = new Vector2(150, 32);
+
+                antennaGroup.AddChild(toggleBtn);
+                bandwidthColumn.AddChild(bandwidth);
+                transmissionColumn.AddChild(rate);
             }
+
             antennaColumn.AddChild(antennaGroup);
             antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, bandwidthColumn, transmissionColumn }));
 
