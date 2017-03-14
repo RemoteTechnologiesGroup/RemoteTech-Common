@@ -13,7 +13,7 @@ namespace RemoteTech.Common.AntennaSimulator
     {
         public static readonly string ECName = "ElectricCharge";
         private static PartResourceDefinition ecResDef = PartResourceLibrary.Instance.resourceDefinitions[ECName];
-        public static readonly string description = "<color=red>Warning:</color> This power-measurement functionality is simple and approximate. For example, solar panels in the editor are ignored because there is no sun there.";
+        public static readonly string liability = "Friendly reminder - This power measurement is deliberately simple and approximate.";
 
         public List<Part> hostVesselparts;
         private ElectricChargeReportMonitor cycleMonitor = null;
