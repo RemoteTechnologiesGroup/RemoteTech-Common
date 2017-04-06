@@ -174,10 +174,10 @@ namespace RemoteTech.Common.AntennaSimulator
             RangeSection ran = this.simulator.getSection(SimulationType.RANGE) as RangeSection;
 
             message += string.Format("Total science data: {0:0.0} Mits\n", totalScienceDataSize);
-            message += string.Format("Total power required: {0:0.0} charges for {1:0.00} seconds\n", cost, duration);
+            message += string.Format("Total power required: {0:0.0} charges for {1:0.00} seconds ({2:0.0} charges available)\n", cost, duration, pow.PowerReport.currentCapacity - pow.PowerReport.lockedCapacity);
             message += string.Format("Science bonus from the signal strength ({0:0.00}%): {1}%\n\n", ran.currentConnectionStrength, GameVariables.Instance.GetDSNScienceCurve().Evaluate(ran.currentConnectionStrength) * 100);
 
-            if (pow.PowerReport.currentCapacity - cost < 0.0)
+            if (pow.PowerReport.currentCapacity - pow.PowerReport.lockedCapacity - cost < 0.0)
             {
                 message += "Transmission: <color=red>Insufficient power</color> to transmit all of the selected experiments";
             }

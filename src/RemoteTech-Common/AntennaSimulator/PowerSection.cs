@@ -69,7 +69,7 @@ namespace RemoteTech.Common.AntennaSimulator
             message += "<b>Storage of electric charge</b>\n";
             message += string.Format("Current usable storage: {0:0.00} / {1:0.00} charge\n", chargeReport.currentCapacity - chargeReport.lockedCapacity, chargeReport.maxCapacity);
             message += string.Format("Reserved storage: {0:0.00} charge\n", chargeReport.lockedCapacity);
-            message += string.Format("Flow rate: {0:0.00} charge/s\n\n", chargeReport.vesselFlowRate);
+            message += string.Format("Actual flow rate: {0:0.00} charge/s\n\n", chargeReport.vesselFlowRate);
 
             renderBatteryTexture(batteryTexture);
 
@@ -78,8 +78,8 @@ namespace RemoteTech.Common.AntennaSimulator
             message += "<b>Antennas, producers and consumers</b>\n";
             message += string.Format("Approx production rate: {0:0.00} charge/s\n", chargeReport.productionRate);
             message += string.Format("Approx consumption rate: {0:0.00} charge/s\n", chargeReport.consumptionRateWOAntenna);
-            message += string.Format("Power drain of standby antennas selected: {0:0.00} charge/s\n", ran.vesselAntennaDrainPower);
-            message += string.Format("Approx flow rate: {0:0.00} charge/s", chargeReport.flowRateWOAntenna - ran.vesselAntennaDrainPower);
+            message += string.Format("Power drain of antennas selected: {0:0.00} charge/s\n", ran.vesselAntennaDrainPower);
+            message += string.Format("Expected flow rate: {0:0.00} charge/s", chargeReport.flowRateWOAntenna - ran.vesselAntennaDrainPower);
 
             return message;
         }
@@ -89,16 +89,18 @@ namespace RemoteTech.Common.AntennaSimulator
             if (chargeReport == null)
                 return "Probing the vessel parts...";
 
-            string message = "\n";
+            string message = "\n<b>Comment</b>\n";
             double percent = ((chargeReport.currentCapacity - chargeReport.lockedCapacity) / (chargeReport.maxCapacity - chargeReport.lockedCapacity)) * 100.0;
             RangeSection ran = this.simulator.getSection(SimulationType.RANGE) as RangeSection;
 
             if (chargeReport.vesselFlowRate < 0.0)
                 message += string.Format("<color=red>Warning:</color> Running out of usable power in {0:0.0} seconds", (chargeReport.currentCapacity - chargeReport.lockedCapacity) / (chargeReport.flowRateWOAntenna + ran.vesselAntennaDrainPower));
             else if (percent <= 30.0)
-                message += "<color=red>Warning:</color> Low battery capacity";
+                message += "<color=orange>Warning:</color> Low battery juice!";
+            else if (percent >= 80.0 && chargeReport.vesselFlowRate >= 0.0)
+                message += "<color=green>Lot of juice</color> for your unplanned disassembly fun!";
             else
-                message += "Good battery capacity";
+                message += "Plenty battery juice";
 
             return message;
         }
