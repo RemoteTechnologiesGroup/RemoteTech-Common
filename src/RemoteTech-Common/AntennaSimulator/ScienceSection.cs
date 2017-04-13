@@ -13,9 +13,18 @@ namespace RemoteTech.Common.AntennaSimulator
         private float customScienceDataSize = 0;
         private bool customDataInputSelected = false;
 
+        private UIStyle style;
+
         private List<ModuleDataTransmitter> antennas = new List<ModuleDataTransmitter>();
 
-        public ScienceSection(AntennaSimulator simulator) : base(SimulationType.SCIENCE, simulator) { }
+        public ScienceSection(AntennaSimulator simulator) : base(SimulationType.SCIENCE, simulator)
+        {
+            style = new UIStyle();
+            style.alignment = TextAnchor.MiddleLeft;
+            style.fontStyle = FontStyle.Normal;
+            style.normal = new UIStyleState();
+            style.normal.textColor = Color.white;
+        }
 
         public override void analyse(List<Part> parts)
         {
@@ -54,19 +63,26 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUIVerticalLayout scienceLayout = new DialogGUIVerticalLayout(true, false, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });
             scienceLayout.AddChild(new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true));
 
+            DialogGUIVerticalLayout scienceColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
+            DialogGUIVerticalLayout scienceSizeColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
             List<string> experimentIDs = ResearchAndDevelopment.GetExperimentIDs();
             for (int j = 0; j < experimentIDs.Count; j++)
             {
                 ScienceExperiment thisExp = ResearchAndDevelopment.GetExperiment(experimentIDs[j]);
 
-                DialogGUIToggle toggleBtn = new DialogGUIToggle(false, string.Format("{0} - {1} Mits", thisExp.experimentTitle, thisExp.dataScale * thisExp.baseValue), delegate (bool b) { scienceSelected(b, thisExp.id); });
-                scienceLayout.AddChild(toggleBtn);
+                DialogGUIToggle toggleBtn = new DialogGUIToggle(false, thisExp.experimentTitle, delegate (bool b) { scienceSelected(b, thisExp.id); }, 200, 32);
+                DialogGUILabel datasize = new DialogGUILabel(string.Format("Data size: {0:0.0} Mits", thisExp.dataScale * thisExp.baseValue), style); datasize.size = new Vector2(200, 32);
+
+                scienceColumn.AddChild(toggleBtn);
+                scienceSizeColumn.AddChild(datasize);
             }
 
-            DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom data size (Mits)", customScienceSelected, 120, 24);
-            DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput);
-            scienceLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { customToggleBtn, sizeInput, new DialogGUIFlexibleSpace() }));
+            DialogGUIToggle customToggleBtn = new DialogGUIToggle(false, "Custom data size (Mits)", customScienceSelected, 200, 32);
+            DialogGUITextInput sizeInput = new DialogGUITextInput("", false, 5, customScienceInput, 60, 32);
+            scienceColumn.AddChild(customToggleBtn);
+            scienceSizeColumn.AddChild(sizeInput);
 
+            scienceLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { scienceColumn, scienceSizeColumn }));
             DialogGUIScrollList scienceScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 3), false, true, scienceLayout);
             components.Add(scienceScrollPane);
 
@@ -79,11 +95,6 @@ namespace RemoteTech.Common.AntennaSimulator
             DialogGUIVerticalLayout antennaColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
             DialogGUIVerticalLayout bandwidthColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
             DialogGUIVerticalLayout transmissionColumn = new DialogGUIVerticalLayout(false, false, 0, new RectOffset(), TextAnchor.MiddleLeft);
-            UIStyle style = new UIStyle();
-            style.alignment = TextAnchor.MiddleLeft;
-            style.fontStyle = FontStyle.Normal;
-            style.normal = new UIStyleState();
-            style.normal.textColor = Color.white;
 
             for(int i=0; i< antennas.Count; i++)
             {
@@ -102,9 +113,9 @@ namespace RemoteTech.Common.AntennaSimulator
             }
 
             antennaColumn.AddChild(antennaGroup);
-            antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, bandwidthColumn, transmissionColumn }));
+            antennaLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, bandwidthColumn, transmissionColumn }));
 
-            DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 4), false, true, antennaLayout);
+            DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 3), false, true, antennaLayout);
             components.Add(antennaScrollPane);
 
             // RESULT

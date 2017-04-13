@@ -9,7 +9,7 @@ namespace RemoteTech.Common.AntennaSimulator
 {
     public class RangeSection : SimulatorSection
     {
-        private enum TargetNode { SINGLEPOINT, TARGET, DSN };
+        private enum TargetNode { CUSTOMISED, TARGET, DSN };
 
         private List<Tuple<ModuleDataTransmitter, bool>> antennas = new List<Tuple<ModuleDataTransmitter, bool>>();
         private DialogGUIVerticalLayout targetNodePaneLayout;
@@ -17,11 +17,21 @@ namespace RemoteTech.Common.AntennaSimulator
 
         public double vesselAntennaComPower = 0.0;
         public double targetAntennaComPower = 0.0;
+        public double targetDistance = 0.0;
         public double vesselAntennaDrainPower = 0.0;
         public double currentConnectionStrength = 50.0;
         private double partialControlRangeMultipler = 0.2; //TODO: get from RT's CustomGameParams
 
-        public RangeSection(AntennaSimulator simulator) : base(SimulationType.RANGE, simulator) { }
+        private UIStyle style;
+
+        public RangeSection(AntennaSimulator simulator) : base(SimulationType.RANGE, simulator)
+        {
+            style = new UIStyle();
+            style.alignment = TextAnchor.MiddleLeft;
+            style.fontStyle = FontStyle.Normal;
+            style.normal = new UIStyleState();
+            style.normal.textColor = Color.white;
+        }
 
         public override void analyse(List<Part> parts)
         {
@@ -29,6 +39,7 @@ namespace RemoteTech.Common.AntennaSimulator
             vesselAntennaComPower = 0;
             vesselAntennaDrainPower = 0;
             targetAntennaComPower = 0;
+            targetDistance = 0;
             antennas.Clear();
 
             //list the antennas detected on the active vessel
@@ -59,7 +70,9 @@ namespace RemoteTech.Common.AntennaSimulator
             List<DialogGUIBase> components = new List<DialogGUIBase>();
 
             //YOUR VESSEL PANEL
-            components.Add(new DialogGUILabel("<b>Your vessel with antennas detected:</b>", true, false));
+            components.Add(new DialogGUILabel("<b>Your vessel with antennas detected</b>", true, false));
+            components.Add(new DialogGUILabel(getVesselAttributeMessage, true, false));
+
             DialogGUIVerticalLayout vesselLayout = new DialogGUIVerticalLayout(true, false, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });
             vesselLayout.AddChild(new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true));
 
@@ -78,30 +91,29 @@ namespace RemoteTech.Common.AntennaSimulator
                 ModuleDataTransmitter antennaModule = thisAntenna.Item1;
                 int antennaIndex = i; // antennaModules.Count doesn't work due to the compiler optimization
 
-                DialogGUIToggle toggleBtn = new DialogGUIToggle(thisAntenna.Item2, antennaModule.part.partInfo.title, delegate (bool b) { antennaSelected(b, antennaIndex); }, 130, 24);
-                DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0.00}", UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower)), style);
-                DialogGUILabel powerDrainLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost), style);
+                DialogGUIToggle toggleBtn = new DialogGUIToggle(thisAntenna.Item2, antennaModule.part.partInfo.title, delegate (bool b) { antennaSelected(b, antennaIndex); }, 170, 32);
+                DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0.00}", UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower)), style); comPowerLabel.size = new Vector2(150, 32);
+                DialogGUILabel powerDrainLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost), style); powerDrainLabel.size = new Vector2(150, 32);
 
                 antennaColumn.AddChild(toggleBtn);
-                comPowerColumn.AddChild(comPowerLabel);
+                comPowerColumn.AddChild(comPowerLabel); 
                 drainPowerColumn.AddChild(powerDrainLabel);
             }
 
-            vesselLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, comPowerColumn, drainPowerColumn }));
+            vesselLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { antennaColumn, comPowerColumn, drainPowerColumn }));
             DialogGUIScrollList antennaScrollPane = new DialogGUIScrollList(new Vector2(AntennaSimulator.dialogWidth - 50, AntennaSimulator.dialogHeight / 3), false, true, vesselLayout);
             components.Add(antennaScrollPane);
-            components.Add(new DialogGUILabel(getCombinablePowerMessage, true, false));
 
             // VESSEL'S TARGET PANEL
-            components.Add(new DialogGUILabel("\n<b>Target of your vessel:</b>", true, false));
-            DialogGUIVerticalLayout targetLayout = new DialogGUIVerticalLayout(true, false, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });
-            targetLayout.AddChild(new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true));
+            components.Add(new DialogGUILabel("\n<b>Target of your vessel</b>", true, false));
+            components.Add(new DialogGUILabel(getTargetAttributeMessage, true, false));
 
-            DialogGUIToggle commNodeToggleBtn = new DialogGUIToggle(true, "Custom node", delegate (bool b) { displayTargetNodeContent(TargetNode.SINGLEPOINT); });
-            DialogGUIToggle targetToggleBtn = new DialogGUIToggle(false, "Designated target", delegate (bool b) { displayTargetNodeContent(TargetNode.TARGET); });
+            DialogGUIToggle commNodeToggleBtn = new DialogGUIToggle(true, "Custom target node", delegate (bool b) { displayTargetNodeContent(TargetNode.CUSTOMISED); });
+            DialogGUIToggle targetToggleBtn = new DialogGUIToggle(false, "Designated vessel", delegate (bool b) { displayTargetNodeContent(TargetNode.TARGET); });
             DialogGUIToggle DSNToggleBtn = new DialogGUIToggle(false, "Deep Space Network", delegate (bool b) { displayTargetNodeContent(TargetNode.DSN); });
-            targetLayout.AddChild(new DialogGUIHorizontalLayout(10, 10, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { new DialogGUIToggleGroup(new DialogGUIToggle[] { commNodeToggleBtn, targetToggleBtn, DSNToggleBtn }) }));
+            components.Add(new DialogGUIHorizontalLayout(10, 10, 0, new RectOffset(5, 5, 0, 0), TextAnchor.UpperLeft, new DialogGUIBase[] { new DialogGUIToggleGroup(new DialogGUIToggle[] { commNodeToggleBtn, targetToggleBtn, DSNToggleBtn }) }));
 
+            DialogGUIVerticalLayout targetLayout = new DialogGUIVerticalLayout(true, false, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true) });
             targetNodePaneLayout = new DialogGUIVerticalLayout(10, 10, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });// empty initially
             drawCustomTargetNode(targetNodePaneLayout);
             targetLayout.AddChild(targetNodePaneLayout);
@@ -139,14 +151,21 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private void drawCustomTargetNode(DialogGUIVerticalLayout paneLayout)
         {
-            DialogGUILabel commPowerLabel = new DialogGUILabel("Com power", 120, 24);
-            DialogGUITextInput powerInput = new DialogGUITextInput("", false, 12, customTargetComPowerEntered, 24);
+            DialogGUILabel commPowerLabel = new DialogGUILabel("Custom communication power", 200, 32);
+            DialogGUITextInput powerInput = new DialogGUITextInput("", false, 12, customTargetComPowerEntered, 110, 32);
+            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, new DialogGUIFlexibleSpace(), powerInput }));
 
-            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, powerInput }));
+            DialogGUILabel distanceLabel = new DialogGUILabel("Custom distance from your vessel", 200, 32);
+            DialogGUITextInput distanceInput = new DialogGUITextInput("", false, 12, customTargetDistanceEntered, 110, 32);
+            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { distanceLabel, new DialogGUIFlexibleSpace(), distanceInput }));
         }
 
         private void drawUserTargetNode(DialogGUIVerticalLayout paneLayout)
         {
+            paneLayout.AddChild(new DialogGUILabel("Antennas of the designated vessel detected:", true, false));
+
+
+            paneLayout.AddChild(new DialogGUILabel("Antennas of the designated vessel detected:", true, false));
             DialogGUILabel massTargetLabel = new DialogGUILabel(getTargetInfo, 120, 24);
 
             paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { massTargetLabel }));
@@ -154,7 +173,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private void drawDSNTargetNode(DialogGUIVerticalLayout paneLayout)
         {
-            //TrackingStationBuilding.
+            //TrackingStationBuilding
             List<DialogGUIToggle> DSNLevels = new List<DialogGUIToggle>();
 
             int numLevels = ScenarioUpgradeableFacilities.GetFacilityLevelCount(SpaceCenterFacility.TrackingStation) + 1; // why is GetFacilityLevelCount zero-index??
@@ -162,12 +181,13 @@ namespace RemoteTech.Common.AntennaSimulator
             {
                 float normalizedLevel = (1f / numLevels) * lvl;
                 double dsnPower = GameVariables.Instance.GetDSNRange(normalizedLevel);
-                DialogGUIToggle DSNLevel = new DialogGUIToggle(false, string.Format("Level {0} - Max DSN Power: {1}", lvl + 1, UiUtils.RoundToNearestMetricFactor(dsnPower)), delegate (bool b) { DSNLevelSelected(b, dsnPower); });
+                DialogGUIToggle DSNLevel = new DialogGUIToggle(false, string.Format("Level {0} - Max Power: {1}", lvl + 1, UiUtils.RoundToNearestMetricFactor(dsnPower)), delegate (bool b) { DSNLevelSelected(b, dsnPower); });
                 DSNLevels.Add(DSNLevel);
             }
 
             DialogGUIToggleGroup DSNLevelGroup = new DialogGUIToggleGroup(DSNLevels.ToArray());
 
+            paneLayout.AddChild(new DialogGUILabel("Tracking Station Levels:", true, false));
             paneLayout.AddChild(new DialogGUIVerticalLayout(true, false, 0, new RectOffset(), TextAnchor.UpperLeft, new DialogGUIBase[] { DSNLevelGroup }));
         }
 
@@ -220,6 +240,14 @@ namespace RemoteTech.Common.AntennaSimulator
             return "";
         }
 
+        private string customTargetDistanceEntered(string userInput)
+        {
+            if (!double.TryParse(userInput, out targetDistance))
+                targetDistance = 0;
+
+            return "";
+        }
+
         private void DSNLevelSelected(bool toggleState, double DSNPower)
         {
             if (toggleState)
@@ -240,9 +268,14 @@ namespace RemoteTech.Common.AntennaSimulator
             }
         }
 
-        private string getCombinablePowerMessage()
+        private string getVesselAttributeMessage()
         {
-            return "<b>Total Com Power:</b> " + UiUtils.RoundToNearestMetricFactor(vesselAntennaComPower);
+            return string.Format("Total Com Power: {0}", UiUtils.RoundToNearestMetricFactor(vesselAntennaComPower));
+        }
+
+        private string getTargetAttributeMessage()
+        {
+            return string.Format("Total Com Power: {0}\nDistance from your vessel: {1}m", UiUtils.RoundToNearestMetricFactor(targetAntennaComPower), UiUtils.RoundToNearestMetricFactor(targetDistance));
         }
 
         private string getWarningPowerMessage()
@@ -271,7 +304,7 @@ namespace RemoteTech.Common.AntennaSimulator
             SimulatorSection.deregisterLayoutComponents(targetNodePaneLayout);
             switch (node)
             {
-                case TargetNode.SINGLEPOINT:
+                case TargetNode.CUSTOMISED:
                     drawCustomTargetNode(targetNodePaneLayout);
                     break;
                 case TargetNode.TARGET:
