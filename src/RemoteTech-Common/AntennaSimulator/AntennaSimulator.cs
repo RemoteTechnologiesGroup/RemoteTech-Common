@@ -35,7 +35,7 @@ namespace RemoteTech.Common.AntennaSimulator
             for (int i = 0; i < layout.children.Count; i++)
             {
                 if (!(layout.children[i] is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
-                    layout.children[i].Create(ref stack, HighLogic.UISkin);
+                    layout.children[i].Create(ref stack, HighLogic.UISkin); // recursively create child's children
             }
         }
 
@@ -48,6 +48,17 @@ namespace RemoteTech.Common.AntennaSimulator
             for (int i = size - 1; i >= 0; i--)
             {
                 DialogGUIBase thisChild = layout.children[i];
+                if(thisChild is DialogGUILayoutBase) // need to delete layout's children since no recursive deletion found
+                { // hmmm  split out as recursive deletion?
+                    int size2 = thisChild.children.Count;
+                    for (int i2 = size2 - 1; i2 >= 0; i2--)
+                    {
+                        DialogGUIBase layoutChild = thisChild.children[i2];
+                        thisChild.children.RemoveAt(i2);
+                        layoutChild.uiItem.gameObject.DestroyGameObjectImmediate();
+                    }
+                }
+
                 if (!(thisChild is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
                 {
                     layout.children.RemoveAt(i);

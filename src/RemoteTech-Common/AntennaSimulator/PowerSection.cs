@@ -24,7 +24,7 @@ namespace RemoteTech.Common.AntennaSimulator
         {
             List<DialogGUIBase> components = new List<DialogGUIBase>();
 
-            DialogGUILabel graphMessageLabel = new DialogGUILabel(ElectricChargeReport.liability + "\n\n<b>Battery status</b>\n", true, false);
+            DialogGUILabel graphMessageLabel = new DialogGUILabel(ElectricChargeReport.liability + "\n\n<b>Battery status:</b>\n", true, false);
             DialogGUILabel massiveMessageLabel = new DialogGUILabel(getPowerReportMessage, true, false);
             DialogGUILabel powerWarning = new DialogGUILabel(getWarningPowerMessage, true, false);
                         
@@ -66,7 +66,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
             string message = "";
 
-            message += "<b>Storage of electric charge</b>\n";
+            message += "<b>Storage of electric charge:</b>\n";
             message += string.Format("Current usable storage: {0:0.00} / {1:0.00} charge\n", chargeReport.currentCapacity - chargeReport.lockedCapacity, chargeReport.maxCapacity);
             message += string.Format("Reserved storage: {0:0.00} charge\n", chargeReport.lockedCapacity);
             message += string.Format("Actual flow rate: {0:0.00} charge/s\n\n", chargeReport.vesselFlowRate);
@@ -75,7 +75,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
             RangeSection ran = this.simulator.getSection(SimulationType.RANGE) as RangeSection;
 
-            message += "<b>Antennas, producers and consumers</b>\n";
+            message += "<b>Antennas, producers and consumers:</b>\n";
             message += string.Format("Approx production rate: {0:0.00} charge/s\n", chargeReport.productionRate);
             message += string.Format("Approx consumption rate: {0:0.00} charge/s\n", chargeReport.consumptionRateWOAntenna);
             message += string.Format("Power drain of antennas selected: {0:0.00} charge/s\n", ran.vesselAntennaDrainPower);
@@ -89,7 +89,7 @@ namespace RemoteTech.Common.AntennaSimulator
             if (chargeReport == null)
                 return "Probing the vessel parts...";
 
-            string message = "\n<b>Comment</b>\n";
+            string message = "\n<b>Comment:</b>\n";
             double percent = ((chargeReport.currentCapacity - chargeReport.lockedCapacity) / (chargeReport.maxCapacity - chargeReport.lockedCapacity)) * 100.0;
             RangeSection ran = this.simulator.getSection(SimulationType.RANGE) as RangeSection;
 

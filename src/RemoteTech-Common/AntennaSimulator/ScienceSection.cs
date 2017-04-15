@@ -87,7 +87,7 @@ namespace RemoteTech.Common.AntennaSimulator
             components.Add(scienceScrollPane);
 
             // ANTENNA LIST
-            components.Add(new DialogGUILabel("<b>List of antennas detected:</b>", true, false));
+            components.Add(new DialogGUILabel("\n<b>List of antennas detected:</b>", true, false));
             DialogGUIVerticalLayout antennaLayout = new DialogGUIVerticalLayout(true, false, 0, new RectOffset(5, 25, 5, 5), TextAnchor.UpperLeft, new DialogGUIBase[] { });
             antennaLayout.AddChild(new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true));
 
