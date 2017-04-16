@@ -20,6 +20,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private static readonly Texture2D satTexture = UiUtils.LoadTexture("commSat");
         private Texture2D rangeAreaTxt;
+        private Texture2D graphAreaTxt;
 
         public double vesselAntennaComPower = 0.0;
         public double targetAntennaComPower = 0.0;
@@ -98,7 +99,7 @@ namespace RemoteTech.Common.AntennaSimulator
                 DialogGUILabel powerDrainLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost), style); powerDrainLabel.size = new Vector2(150, 32);
 
                 antennaColumn.AddChild(toggleBtn);
-                comPowerColumn.AddChild(comPowerLabel); 
+                comPowerColumn.AddChild(comPowerLabel);
                 drainPowerColumn.AddChild(powerDrainLabel);
             }
 
@@ -126,13 +127,20 @@ namespace RemoteTech.Common.AntennaSimulator
             //RESULTS
             components.Add(new DialogGUILabel("\n<b>Estimated ranges and other predictions:</b>", true, false));
 
-            rangeAreaTxt = new Texture2D(AntennaSimulator.dialogWidth - 50, 100, TextureFormat.ARGB32, false);
+            rangeAreaTxt = new Texture2D(AntennaSimulator.dialogWidth - 50, satTexture.height + 40, TextureFormat.ARGB32, false);
             renderRangeTexture(rangeAreaTxt);
             components.Add(new DialogGUIImage(new Vector2(rangeAreaTxt.width, rangeAreaTxt.height), Vector2.zero, Color.white, rangeAreaTxt));
-
-            components.Add(new DialogGUILabel(getConnectionStatus, true, false));
             components.Add(new DialogGUILabel(getFullActionRange, true, false));
             components.Add(new DialogGUILabel(getPartialActionRange, true, false));
+            components.Add(new DialogGUILabel(getConnectionStatus, true, false));
+            components.Add(new DialogGUILabel("\n", true, false));
+
+            graphAreaTxt = new Texture2D(AntennaSimulator.dialogWidth - 50, 300, TextureFormat.ARGB32, false);
+            renderGraphTexture(graphAreaTxt);
+            components.Add(new DialogGUIImage(new Vector2(graphAreaTxt.width, graphAreaTxt.height), Vector2.zero, Color.white, graphAreaTxt));
+            components.Add(new DialogGUILabel(getGraphStatus, true, false));
+            components.Add(new DialogGUILabel("\n", true, false));
+
             components.Add(new DialogGUILabel(getWarningPowerMessage, true, false));
 
             return components.ToArray();
@@ -141,17 +149,18 @@ namespace RemoteTech.Common.AntennaSimulator
         public override void destroy()
         {
             UnityEngine.GameObject.DestroyImmediate(rangeAreaTxt, true);
+            UnityEngine.GameObject.DestroyImmediate(graphAreaTxt, true);
         }
 
         private void drawCustomTarget(DialogGUIVerticalLayout paneLayout)
         {
             DialogGUILabel commPowerLabel = new DialogGUILabel("Communication power", style, true, false);
             DialogGUITextInput powerInput = new DialogGUITextInput("0", false, 12, customTargetComPowerEntered, 110, 32);
-            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, powerInput}));
+            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { commPowerLabel, powerInput }));
 
             DialogGUILabel distanceLabel = new DialogGUILabel("Distance from your vessel", style, true, false);
             DialogGUITextInput distanceInput = new DialogGUITextInput("0", false, 12, customTargetDistanceEntered, 110, 32);
-            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { distanceLabel, distanceInput}));
+            paneLayout.AddChild(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { distanceLabel, distanceInput }));
         }
 
         private void drawUserTarget(DialogGUIVerticalLayout paneLayout)
@@ -194,18 +203,18 @@ namespace RemoteTech.Common.AntennaSimulator
                 if (!HighLogic.LoadedSceneIsFlight || activeVessel == null)
                     throw new Exception("Available in the flight scene only.");
                 else if (potentialTarget == null)
-                    throw new Exception ("Please designate your target.");
+                    throw new Exception("Please designate your target.");
                 else if (!(potentialTarget is CelestialBody) && !(potentialTarget is Vessel))
                     throw new Exception("This target is neither vessel nor celestial body.");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 clearTargetData();
                 return e.Message;
             }
 
             targetDistance = Vector3d.Distance(activeVessel.transform.position, potentialTarget.GetTransform().position);
-            return string.Format("Target: {0} ({1})", potentialTarget.GetName(), potentialTarget.GetType());            
+            return string.Format("Target: {0} ({1})", potentialTarget.GetName(), potentialTarget.GetType());
         }
 
         private void targetChangedEvent()
@@ -213,7 +222,7 @@ namespace RemoteTech.Common.AntennaSimulator
             ITargetable potentialTarget = FlightGlobals.fetch.VesselTarget;
             Vessel activeVessel = FlightGlobals.fetch.activeVessel;
 
-            if(potentialTarget == null)
+            if (potentialTarget == null)
             {
                 SimulatorSection.deregisterLayoutComponents(targetAntennaLayout);
                 savedTarget = null;
@@ -228,7 +237,7 @@ namespace RemoteTech.Common.AntennaSimulator
                     savedTarget = potentialTarget;
                 }
             }
-            else if(savedTarget == null)
+            else if (savedTarget == null)
             {
                 SimulatorSection.deregisterLayoutComponents(targetAntennaLayout);
                 drawTargetAntennas(ref targetAntennaLayout);
@@ -331,7 +340,7 @@ namespace RemoteTech.Common.AntennaSimulator
             double antennaComPower = 0;
             if (toggleState)
             {
-                targetAntennaComPower += targetAntennas[indexAntenna].moduleValues.TryGetValue("antennaPower", ref antennaComPower)? antennaComPower : 1337;
+                targetAntennaComPower += targetAntennas[indexAntenna].moduleValues.TryGetValue("antennaPower", ref antennaComPower) ? antennaComPower : 1337;
             }
             else
             {
@@ -356,7 +365,7 @@ namespace RemoteTech.Common.AntennaSimulator
             if (chargeReport.flowRateWOAntenna + vesselAntennaDrainPower < 0)
                 return string.Format("<color=red>Warning:</color> Estimated to run out of usable power in {0:0.0} seconds", (chargeReport.currentCapacity - chargeReport.lockedCapacity) / (chargeReport.flowRateWOAntenna + vesselAntennaDrainPower));
             else
-                return "Sustainable";
+                return "Sustainable power for working connection";
         }
 
         private string getConnectionStatus()
@@ -366,17 +375,27 @@ namespace RemoteTech.Common.AntennaSimulator
 
             connectionMaxRange = RemoteTechCommNetScenario.RangeModel.GetMaximumRange(vesselAntennaComPower, targetAntennaComPower);
 
-            if (targetDistance > 0)
+            if(connectionMaxRange <= 0)
+            {
+                return premessage + "<color=red>Zero comm power to transmit</color>";
+            }
+            else if (targetDistance > 0)
             {
                 if (targetDistance > connectionMaxRange) // out of range
                     return premessage + "<color=red>Out of range!</color>";
                 else
-                    return premessage + "<color=green>Can communicate</color>";
+                    return premessage + "<color=green>Can connect</color>";
             }
-            else
+            else // target distance is zero
             {
-                return premessage + "See the graph above";
+                return string.Format("{0} Max range is {1}m", premessage, UiUtils.RoundToNearestMetricFactor(connectionMaxRange));
             }
+            
+        }
+
+        private string getGraphStatus()
+        {
+            return "Unfinished Graph - pending on RT Antenna System";
         }
 
         private string getFullActionRange()
@@ -431,26 +450,28 @@ namespace RemoteTech.Common.AntennaSimulator
             for (int y = 0; y < rangeAreaTxt.height; y++)
             {
                 for (int x = 0; x < rangeAreaTxt.width; x++)
-                    rangeAreaTxt.SetPixel(x, y, Color.blue);
+                    rangeAreaTxt.SetPixel(x, y, Color.gray);
             }
 
             //draw connection line
-            int leftX = vesselX+satTexture.width/2;
-            int rightX = targetX-satTexture.width/2;
-            int connectionY = rangeAreaTxt.height/2;
-            int connectionEdgeX = rightX; // full reach
+            int connectionLeftX = vesselX + satTexture.width / 2;
+            int connectionRightX = targetX - satTexture.width / 2; // can reach target
+            int connectionY = rangeAreaTxt.height / 2;
 
-            if(targetDistance > 0) // set connection border if target distance is non-zero
+            if (targetDistance > 0 && connectionMaxRange < targetDistance && connectionMaxRange > 0) //out of range
             {
-                int length = rightX - leftX;
-                connectionEdgeX = leftX + (int)(length * (connectionMaxRange / targetDistance));
+                connectionRightX = connectionLeftX + (int)((connectionRightX- connectionLeftX) * (connectionMaxRange / targetDistance));
+            }
+            else if(connectionMaxRange <= 0) // absolutely no connection
+            {
+                connectionRightX = connectionLeftX;
             }
 
-            for(int x = leftX; x<=connectionEdgeX; x++)
+            for (int x = connectionLeftX; x <= connectionRightX; x++)
             {
-                rangeAreaTxt.SetPixel(x, connectionY-1, Color.green);
+                rangeAreaTxt.SetPixel(x, connectionY - 1, Color.green);
                 rangeAreaTxt.SetPixel(x, connectionY, Color.green);
-                rangeAreaTxt.SetPixel(x, connectionY+1, Color.green);
+                rangeAreaTxt.SetPixel(x, connectionY + 1, Color.green);
             }
 
             //draw two sats at left and right side
@@ -467,6 +488,18 @@ namespace RemoteTech.Common.AntennaSimulator
             }
 
             rangeAreaTxt.Apply();
+        }
+
+        private void renderGraphTexture(Texture2D graphTexture)
+        {
+            //background
+            for (int y = 0; y < graphTexture.height; y++)
+            {
+                for (int x = 0; x < graphTexture.width; x++)
+                    graphTexture.SetPixel(x, y, Color.gray);
+            }
+
+            graphAreaTxt.Apply();
         }
     }
 }
