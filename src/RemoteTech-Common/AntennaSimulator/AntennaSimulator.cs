@@ -25,7 +25,7 @@ namespace RemoteTech.Common.AntennaSimulator
         public virtual void awake() { }
         public virtual void destroy() { }
 
-        public static void registerLayoutComponents(DialogGUIVerticalLayout layout)
+        public static void registerLayoutComponents(DialogGUILayoutBase layout)
         {
             if (layout.children.Count < 1)
                 return;
@@ -39,7 +39,12 @@ namespace RemoteTech.Common.AntennaSimulator
             }
         }
 
-        public static void deregisterLayoutComponents(DialogGUIVerticalLayout layout)
+        public static void deregisterLayoutComponents(DialogGUILayoutBase layout)
+        {
+            recursiveLayoutDeletion(layout); // need to delete layout's children since no recursive deletion found
+        }
+
+        private static void recursiveLayoutDeletion(DialogGUILayoutBase layout)
         {
             if (layout.children.Count < 1)
                 return;
@@ -48,15 +53,9 @@ namespace RemoteTech.Common.AntennaSimulator
             for (int i = size - 1; i >= 0; i--)
             {
                 DialogGUIBase thisChild = layout.children[i];
-                if(thisChild is DialogGUILayoutBase) // need to delete layout's children since no recursive deletion found
-                { // hmmm  split out as recursive deletion?
-                    int size2 = thisChild.children.Count;
-                    for (int i2 = size2 - 1; i2 >= 0; i2--)
-                    {
-                        DialogGUIBase layoutChild = thisChild.children[i2];
-                        thisChild.children.RemoveAt(i2);
-                        layoutChild.uiItem.gameObject.DestroyGameObjectImmediate();
-                    }
+                if (thisChild is DialogGUILayoutBase) 
+                {
+                    recursiveLayoutDeletion(thisChild as DialogGUILayoutBase);
                 }
 
                 if (!(thisChild is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
