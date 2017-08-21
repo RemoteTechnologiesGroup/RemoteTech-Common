@@ -5,7 +5,7 @@ using RemoteTech.Common.Interfaces;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
-    public class RemoteTechCommNetVessel : CommNetVessel
+    public class RemoteTechCommNetVessel : CommNetVessel, IPersistenceSave, IPersistenceLoad
     {
         private IDelayManager _delayManager;
 
@@ -28,6 +28,34 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             // set up the delay
             signalDelay = _delayManager?.GetVesselDelay(vessel) ?? 0;
+        }
+
+        protected override void OnSave(ConfigNode gameNode)
+        {
+            base.OnSave(gameNode);
+
+            if (gameNode.HasNode(GetType().FullName))
+                gameNode.RemoveNode(GetType().FullName);
+
+            gameNode.AddNode(ConfigNode.CreateConfigFromObject(this));
+        }
+
+        protected override void OnLoad(ConfigNode gameNode)
+        {
+            base.OnLoad(gameNode);
+
+            if (gameNode.HasNode(GetType().FullName))
+                ConfigNode.LoadObjectFromConfig(this, gameNode.GetNode(GetType().FullName));
+        }
+
+        public void PersistenceLoad()
+        {
+
+        }
+
+        public void PersistenceSave()
+        {
+            
         }
     }
 }
