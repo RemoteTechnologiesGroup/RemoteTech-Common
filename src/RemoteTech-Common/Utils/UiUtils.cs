@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 
@@ -33,6 +34,30 @@ namespace RemoteTech.Common.Utils
         {
             return window.Contains(new Vector2(Input.mousePosition.x,
                 Screen.height - Input.mousePosition.y));
+        }
+
+        /// <summary>
+        /// Round a given number to nearest metric factor
+        /// </summary>
+        public static string RoundToNearestMetricFactor(double number, int decimalPlaces = 0)
+        {
+            string formatStr = "{0:0}";
+            if (decimalPlaces >= 1)
+            {
+                formatStr = "{0:0.";
+                for (int i = 0; i < decimalPlaces; i++)
+                    formatStr += "0";
+                formatStr += "}";
+            }
+
+            if (number > Math.Pow(10, 9))
+                return string.Format(formatStr + " G", number / Math.Pow(10, 9));
+            else if (number > Math.Pow(10, 6))
+                return string.Format(formatStr + " M", number / Math.Pow(10, 6));
+            else if (number > Math.Pow(10, 3))
+                return string.Format(formatStr + " k", number / Math.Pow(10, 3));
+            else
+                return string.Format(formatStr, number);
         }
     }
 }

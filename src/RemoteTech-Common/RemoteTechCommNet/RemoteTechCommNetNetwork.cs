@@ -1,11 +1,10 @@
 ﻿using CommNet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
+    /// <summary>
+    /// Extend the functionality of the KSP's CommNetNetwork (co-primary model in the Model–view–controller sense; CommNet<> is the other co-primary one)
+    /// </summary>
     public class RemoteTechCommNetNetwork : CommNetNetwork
     {
         public static new RemoteTechCommNetNetwork Instance

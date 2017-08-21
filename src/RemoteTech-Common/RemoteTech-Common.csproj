@@ -61,11 +61,18 @@
     <Compile Include="Interfaces\ISignalProcessorUnit.cs" />
     <Compile Include="RangeModels\RootRangeModel.cs" />
     <Compile Include="RangeModels\StandardRangeModel.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechCommNetBody.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechCommNetHome.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechCommNetNetwork.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetScenario.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechCommNetUI.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetVessel.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechCommNetwork.cs" />
     <Compile Include="RemoteTechLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings\RemoteTechAbstractSettings.cs" />
+    <Compile Include="UI\AbstractDialog.cs" />
+    <Compile Include="UI\ExampleDialog.cs" />
     <Compile Include="Utils\GameUtils.cs" />
     <Compile Include="Utils\PathUtils.cs" />
     <Compile Include="Utils\Singletons.cs" />
@@ -73,7 +80,10 @@
     <Compile Include="Utils\TimeUtils.cs" />
     <Compile Include="Utils\UiUtils.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Textures\groundStationMark.png" />
+    <Content Include="Textures\RTLauncher.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>call $(TargetDir)pdb2mdb.bat

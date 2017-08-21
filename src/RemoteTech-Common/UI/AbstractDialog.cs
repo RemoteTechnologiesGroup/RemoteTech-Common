@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RemoteTech.Common.UI
 {
@@ -13,9 +10,13 @@ namespace RemoteTech.Common.UI
         NonDraggable
     };
 
+    /// <summary>
+    /// Easy-to-use popup dialog with some customisations
+    /// </summary>
     public abstract class AbstractDialog
     {
         protected bool isDisplayed = false;
+        protected string dialogHandler;
         protected string dialogTitle;
         protected int windowWidth;
         protected int windowHeight;
@@ -29,8 +30,9 @@ namespace RemoteTech.Common.UI
 
         protected PopupDialog popupDialog = null;
 
-        public AbstractDialog(string dialogTitle, float normalizedCenterX, float normalizedCenterY, int windowWidth, int windowHeight, DialogOptions[] args)
+        public AbstractDialog(string dialogUniqueHandler, string dialogTitle, float normalizedCenterX, float normalizedCenterY, int windowWidth, int windowHeight, DialogOptions[] args)
         {
+            this.dialogHandler = dialogUniqueHandler;
             this.dialogTitle = dialogTitle;
             this.windowWidth = windowWidth;
             this.windowHeight = windowHeight;
@@ -44,13 +46,69 @@ namespace RemoteTech.Common.UI
         protected virtual void OnAwake(System.Object[] args) { }
         protected virtual void OnPreDismiss() { }
         protected virtual void OnUpdate() { }
-        protected virtual void OnResize() { }
+        protected virtual void OnResize() { } // no idea how resizing works
 
+        /// <summary>
+        /// Create and draw the components of a given layout
+        /// </summary>
+        public static void registerLayoutComponents(DialogGUILayoutBase layout)
+        {
+            if (layout.children.Count < 1)
+                return;
+
+            Stack<Transform> stack = new Stack<Transform>();
+            stack.Push(layout.uiItem.gameObject.transform);
+            for (int i = 0; i < layout.children.Count; i++)
+            {
+                if (!(layout.children[i] is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
+                    layout.children[i].Create(ref stack, HighLogic.UISkin); // recursively create child's children
+            }
+        }
+
+        /// <summary>
+        /// Delete the components of a given layout
+        /// </summary>
+        public static void deregisterLayoutComponents(DialogGUILayoutBase layout)
+        {
+            recursiveLayoutDeletion(layout); // need to delete layout's children since no recursive deletion found
+        }
+
+        /// <summary>
+        /// Recusively delete every layout's children
+        /// </summary>
+        private static void recursiveLayoutDeletion(DialogGUILayoutBase layout)
+        {
+            if (layout.children.Count < 1)
+                return;
+
+            int size = layout.children.Count;
+            for (int i = size - 1; i >= 0; i--)
+            {
+                DialogGUIBase thisChild = layout.children[i];
+                if (thisChild is DialogGUILayoutBase)
+                {
+                    recursiveLayoutDeletion(thisChild as DialogGUILayoutBase);
+                }
+
+                if (!(thisChild is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
+                {
+                    layout.children.RemoveAt(i);
+                    thisChild.uiItem.gameObject.DestroyGameObjectImmediate();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Spawn the dialog without any argument
+        /// </summary>
         public void launch()
         {
             launch(new System.Object[] { });
         }
 
+        /// <summary>
+        /// Spawn the dialog with arguments passed
+        /// </summary>
         public void launch(System.Object[] args)
         {
             if (this.isDisplayed)
@@ -61,6 +119,9 @@ namespace RemoteTech.Common.UI
             OnAwake(args);
         }
 
+        /// <summary>
+        /// Close and deallocate the dialog
+        /// </summary>
         public void dismiss()
         {
             if (this.isDisplayed && popupDialog != null)
@@ -71,6 +132,9 @@ namespace RemoteTech.Common.UI
             }
         }
 
+        /// <summary>
+        /// Read the constructor arguments
+        /// </summary>
         private void processArguments(DialogOptions[] args)
         {
             if (args == null)
@@ -93,6 +157,9 @@ namespace RemoteTech.Common.UI
             }
         }
 
+        /// <summary>
+        /// Build and return the not-spawned dialog
+        /// </summary>
         private PopupDialog spawnDialog()
         {
             /* This dialog looks like below
@@ -136,7 +203,8 @@ namespace RemoteTech.Common.UI
             }
 
             //Spawn the dialog
-            var moDialog = new MultiOptionDialog("",
+            var moDialog = new MultiOptionDialog(this.dialogHandler, // unique name for every dialog
+                                                "",
                                                 dialogTitle,
                                                 HighLogic.UISkin,
                                                 new Rect(normalizedCenterX, normalizedCenterY, windowWidth, windowHeight),

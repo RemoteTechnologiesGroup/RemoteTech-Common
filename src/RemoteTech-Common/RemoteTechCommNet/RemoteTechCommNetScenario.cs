@@ -1,5 +1,6 @@
 ﻿using CommNet;
 using RemoteTech.Common.RangeModels;
+using System.Collections.Generic;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
@@ -75,6 +76,18 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             if (this.customNetwork != null)
                 UnityEngine.Object.Destroy(this.customNetwork);
+        }
+
+        public override void OnLoad(ConfigNode gameNode)
+        {
+            base.OnLoad(gameNode);
+            Logging.Info("Scenario content to be read:\n{0}", gameNode);
+        }
+
+        public override void OnSave(ConfigNode gameNode)
+        {
+            Logging.Info("Scenario content to be saved:\n{0}", gameNode);
+            base.OnSave(gameNode);
         }
     }
 }

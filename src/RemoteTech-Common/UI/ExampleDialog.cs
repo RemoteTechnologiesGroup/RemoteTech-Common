@@ -21,7 +21,8 @@ namespace RemoteTech.Common.UI
         to show how to create/edit/delete some information, and to show how to render texture onto DialogGUIImage/DialogGUISprite
         */
 
-        public ExampleDialog() : base("Demonstration",
+        public ExampleDialog() : base("exampledialog",
+                                    "Demonstration",
                                     0.5f, //x
                                     0.5f, //y
                                     250, //width

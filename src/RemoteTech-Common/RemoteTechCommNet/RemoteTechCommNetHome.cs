@@ -1,5 +1,6 @@
 ﻿using CommNet;
 using RemoteTech.Common.Utils;
+using System;
 using UnityEngine;
 
 namespace RemoteTech.Common.RemoteTechCommNet
@@ -7,16 +8,25 @@ namespace RemoteTech.Common.RemoteTechCommNet
     /// <summary>
     /// Customise the home nodes
     /// </summary>
-    public class RemoteTechCommNetHome : CommNetHome
+    public class RemoteTechCommNetHome : CommNetHome, IComparable<RemoteTechCommNetHome>
     {
         private static readonly Texture2D markTexture = UiUtils.LoadTexture("groundStationMark");
         private static GUIStyle groundStationHeadline;
         private bool loadCompleted = false;
 
+        [Persistent] public string ID;
+        [Persistent] public Color Color = Color.red;
+
+        public double altitude { get { return this.alt; } }
+        public double latitude { get { return this.lat; } }
+        public double longitude { get { return this.lon; } }
+        public CommNode commNode { get { return this.comm; } }
+
         public void copyOf(CommNetHome stockHome)
         {
             Logging.Info("CommNet Home '{0}' added", stockHome.nodeName);
 
+            this.ID = stockHome.nodeName;
             this.nodeName = stockHome.nodeName;
             this.nodeTransform = stockHome.nodeTransform;
             this.isKSC = stockHome.isKSC;
@@ -63,7 +73,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             //draw the dot
             var previousColor = GUI.color;
-            GUI.color = Color.red; // TODO: switch to customised colors when RTSetting goes live
+            GUI.color = this.Color;
             GUI.DrawTexture(groundStationRect, markTexture, ScaleMode.ScaleToFit, true);
             GUI.color = previousColor;
 
@@ -72,7 +82,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             {
                 var headlineRect = groundStationRect;
                 var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
-                headlineRect.x -= nameDim.x / 2;
+                headlineRect.x -= nameDim.x / 2 - 5;
                 headlineRect.y -= nameDim.y + 5;
                 headlineRect.width = nameDim.x;
                 headlineRect.height = nameDim.y;
@@ -107,6 +117,14 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (distance >= 8000000) // TODO: replace this when RTSetting goes live
                 return true;
             return false;
+        }
+
+        /// <summary>
+        /// Allow to be sorted easily
+        /// </summary>
+        public int CompareTo(RemoteTechCommNetHome other)
+        {
+            return this.ID.CompareTo(other.ID);
         }
     }
 }
