@@ -1,4 +1,5 @@
 ﻿using RemoteTech.Common.RemoteTechCommNet;
+using RemoteTech.Common.UI;
 using RemoteTech.Common.Utils;
 using Smooth.Algebraics;
 using System;
@@ -94,9 +95,9 @@ namespace RemoteTech.Common.AntennaSimulator
                 ModuleDataTransmitter antennaModule = thisAntenna.Item1;
                 int antennaIndex = i; // antennaModules.Count doesn't work due to the compiler optimization
 
-                DialogGUIToggle toggleBtn = new DialogGUIToggle(thisAntenna.Item2, antennaModule.part.partInfo.title, delegate (bool b) { vesselAntennaSelected(b, antennaIndex); }, 170, 32);
-                DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0.00}", UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower)), style); comPowerLabel.size = new Vector2(150, 32);
-                DialogGUILabel powerDrainLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost), style); powerDrainLabel.size = new Vector2(150, 32);
+                DialogGUIToggle toggleBtn = new DialogGUIToggle(thisAntenna.Item2, antennaModule.part.partInfo.title, delegate (bool b) { vesselAntennaSelected(b, antennaIndex); }, 150, 32);
+                DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0}", UiUtils.RoundToNearestMetricFactor(antennaModule.CommPower, 2)), style); comPowerLabel.size = new Vector2(120, 32);
+                DialogGUILabel powerDrainLabel = new DialogGUILabel(string.Format("Drain: {0:0.00} charge/s", antennaModule.DataResourceCost), style); powerDrainLabel.size = new Vector2(120, 32);
 
                 antennaColumn.AddChild(toggleBtn);
                 comPowerColumn.AddChild(comPowerLabel);
@@ -180,7 +181,7 @@ namespace RemoteTech.Common.AntennaSimulator
             {
                 float normalizedLevel = (1f / numLevels) * lvl;
                 double dsnPower = GameVariables.Instance.GetDSNRange(normalizedLevel);
-                DialogGUIToggle DSNLevel = new DialogGUIToggle(false, string.Format("Level {0} - Max Power: {1}", lvl + 1, UiUtils.RoundToNearestMetricFactor(dsnPower)), delegate (bool b) { DSNLevelSelected(b, dsnPower); });
+                DialogGUIToggle DSNLevel = new DialogGUIToggle(false, string.Format("Level {0} - Max Power: {1}", lvl + 1, UiUtils.RoundToNearestMetricFactor(dsnPower, 1)), delegate (bool b) { DSNLevelSelected(b, dsnPower); });
                 DSNLevels.Add(DSNLevel);
             }
 
@@ -224,24 +225,24 @@ namespace RemoteTech.Common.AntennaSimulator
 
             if (potentialTarget == null)
             {
-                SimulatorSection.deregisterLayoutComponents(targetAntennaLayout);
+                AbstractDialog.deregisterLayoutComponents(targetAntennaLayout);
                 savedTarget = null;
             }
             else if (savedTarget != null)
             {
                 if (!savedTarget.GetTransform().position.Equals(potentialTarget.GetTransform().position)) // detect target change
                 {
-                    SimulatorSection.deregisterLayoutComponents(targetAntennaLayout);
+                    AbstractDialog.deregisterLayoutComponents(targetAntennaLayout);
                     drawTargetAntennas(ref targetAntennaLayout);
-                    SimulatorSection.registerLayoutComponents(targetAntennaLayout);
+                    AbstractDialog.registerLayoutComponents(targetAntennaLayout);
                     savedTarget = potentialTarget;
                 }
             }
             else if (savedTarget == null)
             {
-                SimulatorSection.deregisterLayoutComponents(targetAntennaLayout);
+                AbstractDialog.deregisterLayoutComponents(targetAntennaLayout);
                 drawTargetAntennas(ref targetAntennaLayout);
-                SimulatorSection.registerLayoutComponents(targetAntennaLayout);
+                AbstractDialog.registerLayoutComponents(targetAntennaLayout);
                 savedTarget = potentialTarget;
             }
         }
@@ -288,7 +289,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
                     int antennaIndex = targetAntennas.Count - 1; // targetAntennas.Count doesn't work due to the compiler optimization
                     DialogGUIToggle toggleBtn = new DialogGUIToggle(false, parts[i].partInfo.title, delegate (bool b) { targetAntennaSelected(b, antennaIndex); }, 170, 32);
-                    DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0.00}", UiUtils.RoundToNearestMetricFactor(antennaComPower)), style); comPowerLabel.size = new Vector2(150, 32);
+                    DialogGUILabel comPowerLabel = new DialogGUILabel(string.Format("Com power: {0:0}", UiUtils.RoundToNearestMetricFactor(antennaComPower, 2)), style); comPowerLabel.size = new Vector2(150, 32);
 
                     antennaColumn.AddChild(toggleBtn);
                     comPowerColumn.AddChild(comPowerLabel);
@@ -350,12 +351,12 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private string getVesselAttributeMessage()
         {
-            return string.Format("Total Com Power: {0}", UiUtils.RoundToNearestMetricFactor(vesselAntennaComPower));
+            return string.Format("Total Com Power: {0}", UiUtils.RoundToNearestMetricFactor(vesselAntennaComPower, 1));
         }
 
         private string getTargetAttributeMessage()
         {
-            return string.Format("Total Com Power: {0}\nDistance from your vessel: {1}m", UiUtils.RoundToNearestMetricFactor(targetAntennaComPower), UiUtils.RoundToNearestMetricFactor(targetDistance));
+            return string.Format("Total Com Power: {0}\nDistance from your vessel: {1}m", UiUtils.RoundToNearestMetricFactor(targetAntennaComPower, 1), UiUtils.RoundToNearestMetricFactor(targetDistance, 2));
         }
 
         private string getWarningPowerMessage()
@@ -388,7 +389,7 @@ namespace RemoteTech.Common.AntennaSimulator
             }
             else // target distance is zero
             {
-                return string.Format("{0} Max range is {1}m", premessage, UiUtils.RoundToNearestMetricFactor(connectionMaxRange));
+                return string.Format("{0} Max range is {1}m", premessage, UiUtils.RoundToNearestMetricFactor(connectionMaxRange, 2));
             }
             
         }
@@ -400,12 +401,12 @@ namespace RemoteTech.Common.AntennaSimulator
 
         private string getFullActionRange()
         {
-            return string.Format("Maximum full probe control: {0}m", UiUtils.RoundToNearestMetricFactor(connectionMaxRange * (1.0 - partialControlRangeMultipler)));
+            return string.Format("Maximum full probe control: {0}m", UiUtils.RoundToNearestMetricFactor(connectionMaxRange * (1.0 - partialControlRangeMultipler), 2));
         }
 
         private string getPartialActionRange()
         {
-            return string.Format("Maximum partial probe control: {0}m", UiUtils.RoundToNearestMetricFactor(RemoteTechCommNetScenario.RangeModel.GetMaximumRange(vesselAntennaComPower, targetAntennaComPower)));
+            return string.Format("Maximum partial probe control: {0}m", UiUtils.RoundToNearestMetricFactor(RemoteTechCommNetScenario.RangeModel.GetMaximumRange(vesselAntennaComPower, targetAntennaComPower), 2));
         }
 
         private void displayTargetContent(bool toggleState, TargetType node)
@@ -414,7 +415,7 @@ namespace RemoteTech.Common.AntennaSimulator
                 return;
 
             clearTargetData();
-            SimulatorSection.deregisterLayoutComponents(targetPanelLayout);
+            AbstractDialog.deregisterLayoutComponents(targetPanelLayout);
             switch (node)
             {
                 case TargetType.CUSTOMISED:
@@ -427,7 +428,7 @@ namespace RemoteTech.Common.AntennaSimulator
                     drawDSNTarget(targetPanelLayout);
                     break;
             }
-            SimulatorSection.registerLayoutComponents(targetPanelLayout);
+            AbstractDialog.registerLayoutComponents(targetPanelLayout);
         }
 
         private void clearTargetData()

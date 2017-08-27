@@ -50,6 +50,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AntennaSimulator\AntennaSimulator.cs" />
+    <Compile Include="AntennaSimulator\ElectricChargeReport.cs" />
+    <Compile Include="AntennaSimulator\PowerSection.cs" />
+    <Compile Include="AntennaSimulator\RangeSection.cs" />
+    <Compile Include="AntennaSimulator\ScienceSection.cs" />
     <Compile Include="Api\RemoteTechModules.cs" />
     <Compile Include="Commands\AbstractDelayCommand.cs" />
     <Compile Include="CommonCore.cs" />
@@ -81,6 +86,7 @@
     <Compile Include="Utils\UiUtils.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Textures\commSat.png" />
     <Content Include="Textures\groundStationMark.png" />
     <Content Include="Textures\RTLauncher.png" />
   </ItemGroup>

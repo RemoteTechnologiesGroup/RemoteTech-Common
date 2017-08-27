@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RemoteTech.Common.AntennaSimulator
 {
@@ -43,7 +41,7 @@ namespace RemoteTech.Common.AntennaSimulator
 
             components.Add(graphMessageLabel);
             components.Add(batteryImage);
-            components.Add(new DialogGUIHorizontalLayout(10, 10, 0, new RectOffset(0, 0, -25 , 0), TextAnchor.UpperCenter, new DialogGUIBase[] { batteryLabel }));
+            components.Add(new DialogGUIHorizontalLayout(10, 10, 0, new RectOffset(0, 0, -25, 0), TextAnchor.UpperCenter, new DialogGUIBase[] { batteryLabel }));
             components.Add(massiveMessageLabel);
             components.Add(powerWarning);
 

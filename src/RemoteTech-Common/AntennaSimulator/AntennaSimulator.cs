@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using RemoteTech.Common.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,47 +23,6 @@ namespace RemoteTech.Common.AntennaSimulator
         public abstract DialogGUIBase[] draw();
         public virtual void awake() { }
         public virtual void destroy() { }
-
-        public static void registerLayoutComponents(DialogGUILayoutBase layout)
-        {
-            if (layout.children.Count < 1)
-                return;
-
-            Stack<Transform> stack = new Stack<Transform>();
-            stack.Push(layout.uiItem.gameObject.transform);
-            for (int i = 0; i < layout.children.Count; i++)
-            {
-                if (!(layout.children[i] is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
-                    layout.children[i].Create(ref stack, HighLogic.UISkin); // recursively create child's children
-            }
-        }
-
-        public static void deregisterLayoutComponents(DialogGUILayoutBase layout)
-        {
-            recursiveLayoutDeletion(layout); // need to delete layout's children since no recursive deletion found
-        }
-
-        private static void recursiveLayoutDeletion(DialogGUILayoutBase layout)
-        {
-            if (layout.children.Count < 1)
-                return;
-
-            int size = layout.children.Count;
-            for (int i = size - 1; i >= 0; i--)
-            {
-                DialogGUIBase thisChild = layout.children[i];
-                if (thisChild is DialogGUILayoutBase) 
-                {
-                    recursiveLayoutDeletion(thisChild as DialogGUILayoutBase);
-                }
-
-                if (!(thisChild is DialogGUIContentSizer)) // avoid if DialogGUIContentSizer is detected
-                {
-                    layout.children.RemoveAt(i);
-                    thisChild.uiItem.gameObject.DestroyGameObjectImmediate();
-                }
-            }
-        }
     }
 
     public class AntennaSimulator : AbstractDialog
@@ -74,9 +32,9 @@ namespace RemoteTech.Common.AntennaSimulator
         private DialogGUIVerticalLayout contentPaneLayout;
 
         public static readonly int dialogWidth = 650;
-        public static readonly int dialogHeight = 500;
+        public static readonly int dialogHeight = 600;
 
-        public AntennaSimulator() : base("RemoteTech Antenna Simulator",
+        public AntennaSimulator() : base("antenna_sim", "RemoteTech Antenna Simulator",
                                                 0.75f,
                                                 0.5f,
                                                 dialogWidth,
@@ -99,8 +57,8 @@ namespace RemoteTech.Common.AntennaSimulator
             else
                 vesselName = EditorLogic.fetch.ship.shipName;
 
-            DialogGUILabel descrptionLabel = new DialogGUILabel(string.Format("Based on this vessel '{0}', a number of estimations are computed and displayed below.\n\n", vesselName), true, false);
-            contentComponents.Add(new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleLeft, new DialogGUIBase[] { descrptionLabel }));
+            DialogGUILabel descrptionLabel = new DialogGUILabel(string.Format("Based on this vessel '{0}', a number of estimations are computed and displayed below.", vesselName), true, false);
+            contentComponents.Add(descrptionLabel);
 
             // BUTTON TABS
             DialogGUIButton rangeButton = new DialogGUIButton("Antenna range", delegate { displayContent(SimulationType.RANGE); }, false);
@@ -116,7 +74,7 @@ namespace RemoteTech.Common.AntennaSimulator
             contentComponents.Add(tabbedButtonRow);
 
             DialogGUIBase[] rows = new DialogGUIBase[] { new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true) };
-            contentPaneLayout = new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(10, 25, 10, 10), TextAnchor.UpperLeft, rows);
+            contentPaneLayout = new DialogGUIVerticalLayout(dialogWidth-50, dialogHeight-50, 0, new RectOffset(10, 25, 10, 10), TextAnchor.UpperLeft, rows);
             contentComponents.Add(new DialogGUIScrollList(Vector2.one, false, true, contentPaneLayout));
 
             return contentComponents;
