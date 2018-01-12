@@ -1,4 +1,5 @@
 ﻿using CommNet;
+using KSP.Localization;
 using RemoteTech.Common.Utils;
 using System;
 using UnityEngine;
@@ -16,11 +17,17 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
         [Persistent] public string ID;
         [Persistent] public Color Color = Color.red;
+        [Persistent] protected string OptionalName = "";
 
         public double altitude { get { return this.alt; } }
         public double latitude { get { return this.lat; } }
         public double longitude { get { return this.lon; } }
         public CommNode commNode { get { return this.comm; } }
+        public string stationName
+        {
+            get { return (this.OptionalName.Length == 0) ? this.displaynodeName : this.OptionalName; }
+            set { this.OptionalName = value; }
+        }
 
         public void copyOf(CommNetHome stockHome)
         {
@@ -28,6 +35,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             this.ID = stockHome.nodeName;
             this.nodeName = stockHome.nodeName;
+            this.displaynodeName = Localizer.Format(stockHome.displaynodeName);
             this.nodeTransform = stockHome.nodeTransform;
             this.isKSC = stockHome.isKSC;
             this.body = stockHome.GetComponentInParent<CelestialBody>();
@@ -124,7 +132,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         /// </summary>
         public int CompareTo(RemoteTechCommNetHome other)
         {
-            return this.ID.CompareTo(other.ID);
+            return this.stationName.CompareTo(other.stationName);
         }
     }
 }
