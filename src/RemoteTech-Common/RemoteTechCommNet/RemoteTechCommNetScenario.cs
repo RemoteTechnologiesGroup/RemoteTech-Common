@@ -33,8 +33,18 @@ namespace RemoteTech.Common.RemoteTechCommNet
         {
             //base.Start(); //turn off base.Start() contained the AddComponent() for the stock components
 
-            //TODO pick a range model depending on settings
-            RangeModel = new StandardRangeModel();
+            switch (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().RangeModelType)
+            {
+                case RemoteTechCommonParams.RangeModel.Standard:
+                    RangeModel = new StandardRangeModel();
+                    break;
+                case RemoteTechCommonParams.RangeModel.Root:
+                    RangeModel = new RootRangeModel();
+                    break;
+                default:
+                    RangeModel = new StandardRangeModel();
+                    break;
+            }
 
             RemoteTechCommNetScenario.Instance = this;
 
@@ -83,7 +93,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 UnityEngine.Object.Destroy(bodies[i]);
             }
 
-            Logging.Info("RemoteTech Scenario loading done! ");
+            Logging.Info("RemoteTech Scenario loading done!");
         }
 
         public override void OnAwake()

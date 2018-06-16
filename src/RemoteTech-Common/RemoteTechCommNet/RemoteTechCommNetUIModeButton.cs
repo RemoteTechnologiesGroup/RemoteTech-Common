@@ -17,8 +17,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
         protected override void Awake()
         {
-            //if (CommNet.CommNetScenario.CommNetEnabled)
-            if(true)//TODO: tie to RT setting
+            if (CommNet.CommNetScenario.CommNetEnabled)
             {
                 base.gameObject.SetActive(true);
                 //GameEvents.CommNet.OnNetworkInitialized.Add(new EventVoid.OnEvent(this.OnNetworkInitialized));

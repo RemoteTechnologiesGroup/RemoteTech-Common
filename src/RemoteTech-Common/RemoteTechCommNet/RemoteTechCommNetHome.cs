@@ -16,7 +16,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         private bool loadCompleted = false;
 
         [Persistent] public string ID;
-        [Persistent] public Color Color = Color.red;
+        [Persistent] public Color Color = HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().RemoteStationColorDot;
         [Persistent] protected string OptionalName = "";
 
         public double altitude { get { return this.alt; } }
@@ -67,16 +67,16 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             var worldPos = ScaledSpace.LocalToScaledSpace(nodeTransform.transform.position);
 
-            if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f)
+            if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f || HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsFully)
                 return;
 
             var position = PlanetariumCamera.Camera.WorldToScreenPoint(worldPos);
             var groundStationRect = new Rect((position.x - 8), (Screen.height - position.y) - 8, 16, 16);
 
-            if (IsOccluded(nodeTransform.transform.position, this.body))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
-            if (!IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsOnDistance && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
                 return;
 
             //draw the dot
@@ -86,7 +86,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             GUI.color = previousColor;
 
             //draw the headline below the dot
-            if (UiUtils.ContainsMouse(groundStationRect))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().ShowMouseOverInfoGroundStations && UiUtils.ContainsMouse(groundStationRect))
             {
                 var headlineRect = groundStationRect;
                 var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
@@ -95,6 +95,40 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 headlineRect.width = nameDim.x;
                 headlineRect.height = nameDim.y;
                 GUI.Label(headlineRect, this.nodeName, RemoteTechCommNetHome.groundStationHeadline);
+
+                /*
+                //TODO: display antenna info
+                // loop antennas
+                String antennaRanges = String.Empty;
+                foreach (var antenna in s.Antennas)
+                {
+                    if(antenna.Omni > 0)
+                    {
+                        antennaRanges += "Omni: "+ RTUtil.FormatSI(antenna.Omni,"m") + Environment.NewLine;
+                    }
+                    if (antenna.Dish > 0)
+                    {
+                        antennaRanges += "Dish: " + RTUtil.FormatSI(antenna.Dish, "m") + Environment.NewLine;
+                    }
+                }
+
+                if(!antennaRanges.Equals(String.Empty))
+                {
+                    Rect antennas = screenRect;
+                    GUIContent content = new GUIContent(antennaRanges);
+
+                    Vector2 antennaDim = this.smallStationText.CalcSize(content);
+                    float maxHeight = this.smallStationText.CalcHeight(content, antennaDim.x);
+
+                    antennas.y += headline.height - 3;
+                    antennas.x -= antennaDim.x + 10;
+                    antennas.width = antennaDim.x;
+                    antennas.height = maxHeight;
+
+                    // draw antenna infos of the station
+                    GUI.Label(antennas, antennaRanges, this.smallStationText);
+                }
+                */
             }
         }
 
@@ -122,7 +156,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             var camPos = ScaledSpace.ScaledToLocalSpace(PlanetariumCamera.Camera.transform.position);
             float distance = Vector3.Distance(camPos, loc);
 
-            if (distance >= 8000000) // TODO: replace this when RTSetting goes live
+            if (distance >= HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations)
                 return true;
             return false;
         }

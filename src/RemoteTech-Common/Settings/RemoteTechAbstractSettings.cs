@@ -6,6 +6,8 @@ namespace RemoteTech.Common.Settings
 {
     public abstract class RemoteTechAbstractSettings : IRemoteTechSettings
     {
+        //TODO: route all custom params through this?
+
         public abstract string ConfigNodeName { get; }
         public abstract string DefaultSettingCfgUrl { get; }
 

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 namespace RemoteTech.Common.Utils
@@ -58,6 +60,98 @@ namespace RemoteTech.Common.Utils
                 return string.Format(formatStr + " k", number / Math.Pow(10, 3));
             else
                 return string.Format(formatStr, number);
+        }
+
+        /// <summary>
+        /// Convert the color to hex string (#RRGGBB)
+        /// </summary>
+        //http://answers.unity3d.com/questions/1102232/how-to-get-the-color-code-in-rgb-hex-from-rgba-uni.html
+        public static string colorToHex(Color thisColor) { return string.Format("#{0:X2}{1:X2}{2:X2}", toByte(thisColor.r), toByte(thisColor.g), toByte(thisColor.b)); }
+        private static byte toByte(float f)
+        {
+            f = Mathf.Clamp01(f);
+            return (byte)(f * 255);
+        }
+
+        /// <summary>
+        /// Create new texture and fill up with given color
+        /// </summary>
+        //https://forum.unity3d.com/threads/best-easiest-way-to-change-color-of-certain-pixels-in-a-single-sprite.223030/
+        public static Texture2D createAndColorize(int width, int height, Color thisColor)
+        {
+            Texture2D newTexture = new Texture2D(width, height);
+            newTexture.filterMode = FilterMode.Point;
+            newTexture.wrapMode = TextureWrapMode.Clamp;
+
+            for (int y = 0; y < newTexture.height; y++)
+            {
+                for (int x = 0; x < newTexture.width; x++)
+                {
+                    newTexture.SetPixel(x, y, thisColor);
+                }
+            }
+
+            newTexture.Apply();
+            return newTexture;
+        }
+
+        /// <summary>
+        /// Fill the existing texture with the given color
+        /// </summary>
+        public static void colorize(Texture2D existingTexture, Color thisColor)
+        {
+            for (int y = 0; y < existingTexture.height; y++)
+            {
+                for (int x = 0; x < existingTexture.width; x++)
+                {
+                    existingTexture.SetPixel(x, y, thisColor);
+                }
+            }
+
+            existingTexture.Apply();
+        }
+
+        /// <summary>
+        /// Overlay two base and topmost textures to create a new texture
+        /// </summary>
+        public static Texture2D createAndOverlay(Texture2D baseTexture, Texture2D frontTexture)
+        {
+            Texture2D newTexture = new Texture2D(baseTexture.width, baseTexture.height);
+            newTexture.filterMode = FilterMode.Point;
+            newTexture.wrapMode = TextureWrapMode.Clamp;
+
+            for (int y = 0; y < newTexture.height; y++)
+            {
+                for (int x = 0; x < newTexture.width; x++)
+                {
+                    if (frontTexture.GetPixel(x, y).a <= 0f) // transparent
+                        newTexture.SetPixel(x, y, baseTexture.GetPixel(x, y));
+                    else
+                        newTexture.SetPixel(x, y, frontTexture.GetPixel(x, y));
+                }
+            }
+
+            newTexture.Apply();
+            return newTexture;
+        }
+
+        /// <summary>
+        /// Easy method to convert list to string 
+        /// </summary>
+        public static string Concatenate<T>(IEnumerable<T> source, string delimiter)
+        {
+            var itr = source.GetEnumerator();
+            var s = new StringBuilder();
+            bool first = true;
+            while (itr.MoveNext())
+            {
+                if (first)
+                    first = false;
+                else
+                    s.Append(delimiter);
+                s.Append(itr.Current);
+            }
+            return s.ToString();
         }
     }
 }
