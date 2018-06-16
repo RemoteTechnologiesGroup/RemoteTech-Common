@@ -16,8 +16,20 @@ namespace RemoteTech.Common
             Root,
         }
 
+        //[GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
+        //public string description = "Core functionality";
+
         [GameParameters.CustomParameterUI("Range Model Mode", toolTip = "This setting controls how the game determines whether two antennas are in range of each other.\nRead more on our online manual about the difference for each rule.")]
         public RangeModel RangeModelType = RangeModel.Standard;
+
+        [GameParameters.CustomParameterUI("Upgradeable Mission Control antennas", toolTip = "ON: Mission Control antenna range is upgraded when the Tracking Center is upgraded.\nOFF: Mission Control antenna range isn't upgradeable.")]
+        public bool UpgradeableMissionControlAntennas = true;
+
+        public double OmniRangeClampFactor = 100;
+        public double DishRangeClampFactor = 1000;
+
+        [GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
+        public string visualDesc = " \n<b><u>Visual styles</u></b>";
 
         [GameParameters.CustomParameterUI("Hide Ground Stations completely", toolTip = "ON: Ground Stations will not be shown at all times.\nOFF: Ground Stations are shown conditionally.")]
         public bool HideGroundStationsFully = false;
@@ -31,8 +43,11 @@ namespace RemoteTech.Common
         [GameParameters.CustomParameterUI("Mouseover of Ground Stations", toolTip = "ON: Some useful information is shown when you mouseover a Ground Station on the map view or Tracking Station.\nOFF: Information isn't shown during mouseover.")]
         public bool ShowMouseOverInfoGroundStations = true;
 
-        [GameParameters.CustomParameterUI("Upgradeable Mission Control antennas", toolTip = "ON: Mission Control antenna range is upgraded when the Tracking Center is upgraded.\nOFF: Mission Control antenna range isn't upgradeable.")]
-        public bool UpgradeableMissionControlAntennas = true;
+        [GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
+        public string cheatDesc = " \n<b><u>Cheats</u></b>";
+
+        [GameParameters.CustomParameterUI("Connection required to control antennas", toolTip = "ON: antennas can be activated, deactivated and targeted without a connection.\nOFF: No control without a working connection.")]
+        public bool ControlAntennaWithConnection = true;
 
         [GameParameters.CustomParameterUI("Planets and moons will block a signal", toolTip = "ON: Antennas and dishes will not need line-of-sight to maintain a connection, as long as they have adequate range and power.\nOFF: Antennas and dishes need line-of-sight to maintain a connection.")]
         public bool EnforceLineOfSight = true;
