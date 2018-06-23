@@ -63,21 +63,10 @@ namespace RemoteTech.Common.Utils
         }
 
         /// <summary>
-        /// Convert the color to hex string (#RRGGBB)
-        /// </summary>
-        //http://answers.unity3d.com/questions/1102232/how-to-get-the-color-code-in-rgb-hex-from-rgba-uni.html
-        public static string colorToHex(Color thisColor) { return string.Format("#{0:X2}{1:X2}{2:X2}", toByte(thisColor.r), toByte(thisColor.g), toByte(thisColor.b)); }
-        private static byte toByte(float f)
-        {
-            f = Mathf.Clamp01(f);
-            return (byte)(f * 255);
-        }
-
-        /// <summary>
         /// Create new texture and fill up with given color
         /// </summary>
         //https://forum.unity3d.com/threads/best-easiest-way-to-change-color-of-certain-pixels-in-a-single-sprite.223030/
-        public static Texture2D createAndColorize(int width, int height, Color thisColor)
+        public static Texture2D CreateAndColorize(int width, int height, Color thisColor)
         {
             Texture2D newTexture = new Texture2D(width, height);
             newTexture.filterMode = FilterMode.Point;
@@ -98,7 +87,7 @@ namespace RemoteTech.Common.Utils
         /// <summary>
         /// Fill the existing texture with the given color
         /// </summary>
-        public static void colorize(Texture2D existingTexture, Color thisColor)
+        public static void Colorize(Texture2D existingTexture, Color thisColor)
         {
             for (int y = 0; y < existingTexture.height; y++)
             {
@@ -114,7 +103,7 @@ namespace RemoteTech.Common.Utils
         /// <summary>
         /// Overlay two base and topmost textures to create a new texture
         /// </summary>
-        public static Texture2D createAndOverlay(Texture2D baseTexture, Texture2D frontTexture)
+        public static Texture2D CreateAndOverlay(Texture2D baseTexture, Texture2D frontTexture)
         {
             Texture2D newTexture = new Texture2D(baseTexture.width, baseTexture.height);
             newTexture.filterMode = FilterMode.Point;
@@ -152,6 +141,30 @@ namespace RemoteTech.Common.Utils
                 s.Append(itr.Current);
             }
             return s.ToString();
+        }
+
+        /// <summary>
+        /// Convert from Color to String (R,G,B,A)
+        /// </summary>
+        public static string ColorToString(Color color)
+        {
+            return color.r + "," + color.g + "," + color.b + "," + color.a;
+        }
+
+        /// <summary>
+        /// Convert from String (R,G,B,A) to Color
+        /// </summary>
+        public static Color StringToColor(string colorString)
+        {
+            try
+            {
+                string[] colors = colorString.Split(',');
+                return new Color(float.Parse(colors[0]), float.Parse(colors[1]), float.Parse(colors[2]), float.Parse(colors[3]));
+            }
+            catch
+            {
+                return Color.white;
+            }
         }
     }
 }

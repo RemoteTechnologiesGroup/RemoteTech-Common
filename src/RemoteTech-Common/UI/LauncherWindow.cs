@@ -13,7 +13,7 @@ namespace RemoteTech.Common.UI
                                         0.5f, 
                                         300,
                                         300,
-                                        new DialogOptions[] { DialogOptions.HideDismissButton, DialogOptions.AllowBgInputs })
+                                        new DialogOptions[] { DialogOptions.HideDismissButton })
         {
         }
 
@@ -21,9 +21,10 @@ namespace RemoteTech.Common.UI
         {
             List<DialogGUIBase> componments = new List<DialogGUIBase>();
 
-            DialogGUIButton antennaSimButton = new DialogGUIButton("Antenna Simulator", delegate { });
-            DialogGUIButton visualStyleButton = new DialogGUIButton("Visual styles", delegate { });
-            componments.Add(new DialogGUIVerticalLayout(new DialogGUIBase[] { antennaSimButton, visualStyleButton }));
+            DialogGUIButton antennaSimButton = new DialogGUIButton("Antenna Simulator", delegate { }, false);
+            DialogGUIButton visualStyleButton = new DialogGUIButton("Visual styles", delegate { new VisualStyleWindow().launch(); }, false);
+            DialogGUIButton aboutButton = new DialogGUIButton("About", delegate { }, false);
+            componments.Add(new DialogGUIVerticalLayout(new DialogGUIBase[] { antennaSimButton, visualStyleButton, aboutButton }));
 
             return componments;
         }

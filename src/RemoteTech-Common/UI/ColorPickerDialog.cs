@@ -91,9 +91,9 @@ namespace CommNetConstellation.UI
             List<DialogGUIBase> listComponments = new List<DialogGUIBase>();
 
             DialogGUILabel newColorLabel = new DialogGUILabel("<b>  New</b>", 40, 12);
-            newColorImage = new DialogGUIImage(new Vector2(30, 24), Vector2.zero, chosenColor, UiUtils.createAndColorize(30, 24, Color.white));
+            newColorImage = new DialogGUIImage(new Vector2(30, 24), Vector2.zero, chosenColor, UiUtils.CreateAndColorize(30, 24, Color.white));
             DialogGUILabel currentColorLabel = new DialogGUILabel("<b>Current  </b>", 45, 12);
-            DialogGUIImage currentColorImage = new DialogGUIImage(new Vector2(30, 24), Vector2.zero, currentColor, UiUtils.createAndColorize(30, 24, Color.white));
+            DialogGUIImage currentColorImage = new DialogGUIImage(new Vector2(30, 24), Vector2.zero, currentColor, UiUtils.CreateAndColorize(30, 24, Color.white));
             listComponments.Add(new DialogGUIHorizontalLayout(true, false, 0, new RectOffset(), TextAnchor.MiddleCenter, new DialogGUIBase[] { new DialogGUISpace(40), newColorImage, newColorLabel, new DialogGUISpace(dialogWidth - 80 - 145), currentColorLabel, currentColorImage, new DialogGUISpace(40) }));
 
             colorPickerImage = new DialogGUIImage(new Vector2(displayTextureWidth, displayTextureHeight), Vector2.zero, Color.white, colorPickerTexture);

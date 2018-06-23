@@ -4,10 +4,12 @@ using RemoteTech.Common.Utils;
 
 namespace RemoteTech.Common.Settings
 {
+    /// <summary>
+    /// Currently unused because the settings are stored in ScenarioModule and GameParameters.CustomParameterNode
+    /// It is unclear whether the process of building settings from third-party mods installed is relevant in KSP 1.3 and above
+    /// </summary>
     public abstract class RemoteTechAbstractSettings : IRemoteTechSettings
     {
-        //TODO: route all custom params through this?
-
         public abstract string ConfigNodeName { get; }
         public abstract string DefaultSettingCfgUrl { get; }
 

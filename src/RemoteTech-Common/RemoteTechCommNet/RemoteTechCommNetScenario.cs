@@ -1,8 +1,9 @@
 ﻿using CommNet;
 using KSP.UI.Screens.Flight;
 using RemoteTech.Common.RangeModels;
+using RemoteTech.Common.Utils;
 using System;
-using System.Collections.Generic;
+using UnityEngine;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
@@ -22,6 +23,14 @@ namespace RemoteTech.Common.RemoteTechCommNet
         private RemoteTechCommNetNetwork customNetwork = null;
         private RemoteTechTelemetryUpdate customCommNetTelemetry = null;
         private RemoteTechCommNetUIModeButton customCommNetModeButton = null;
+
+        //Other settings
+        public Color DishConnectionColor = new Color(1.0f, 0.70f, 0.03f, 1f);
+        public Color OmniConnectionColor = new Color(0.55f, 0.51f, 0.40f, 1f);
+        public Color ActiveConnectionColor = new Color(0.65f, 1.0f, 0.01f, 1f);
+        public Color GroundStationDotColor = new Color(1.0f, 0.0f, 0.0f, 1f);
+        public Color LowSignalConnectionColor = new Color(1.0f, 0.0f, 0.0f, 1f);
+        public Color DirectConnectionColor = new Color(0.0f, 0.75f, 0.95f, 1f);//part of signal non-relay connection
 
         public static new RemoteTechCommNetScenario Instance
         {
@@ -142,6 +151,24 @@ namespace RemoteTech.Common.RemoteTechCommNet
                         case "DisplayModeFlight":
                             RemoteTechCommNetUI.CustomModeFlightMap = (RemoteTechCommNetUI.CustomDisplayMode)((int)Enum.Parse(typeof(RemoteTechCommNetUI.CustomDisplayMode), value.value));
                             break;
+                        case "DishConnectionColor":
+                            DishConnectionColor = UiUtils.StringToColor(value.value);
+                            break;
+                        case "OmniConnectionColor":
+                            OmniConnectionColor = UiUtils.StringToColor(value.value);
+                            break;
+                        case "ActiveConnectionColor":
+                            ActiveConnectionColor = UiUtils.StringToColor(value.value);
+                            break;
+                        case "GroundStationDotColor":
+                            GroundStationDotColor = UiUtils.StringToColor(value.value);
+                            break;
+                        case "LowSignalConnectionColor":
+                            LowSignalConnectionColor = UiUtils.StringToColor(value.value);
+                            break;
+                        case "DirectConnectionColor":
+                            DirectConnectionColor = UiUtils.StringToColor(value.value);
+                            break;
                     }
                 }
             }
@@ -158,6 +185,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 //Other variables
                 gameNode.AddValue("DisplayModeTracking", RemoteTechCommNetUI.CustomModeTrackingStation);
                 gameNode.AddValue("DisplayModeFlight", RemoteTechCommNetUI.CustomModeFlightMap);
+
+                gameNode.AddValue("DishConnectionColor", UiUtils.ColorToString(DishConnectionColor));
+                gameNode.AddValue("OmniConnectionColor", UiUtils.ColorToString(OmniConnectionColor));
+                gameNode.AddValue("ActiveConnectionColor", UiUtils.ColorToString(ActiveConnectionColor));
+                gameNode.AddValue("GroundStationDotColor", UiUtils.ColorToString(GroundStationDotColor));
+                gameNode.AddValue("LowSignalConnectionColor", UiUtils.ColorToString(LowSignalConnectionColor));
+                gameNode.AddValue("DirectConnectionColor", UiUtils.ColorToString(DirectConnectionColor));
 
                 Logging.Info("RemoteTech Scenario content to be saved:\n{0}", gameNode);
             }

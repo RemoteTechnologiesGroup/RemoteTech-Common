@@ -78,6 +78,7 @@
     <Compile Include="UI\ColorPickerDialog.cs" />
     <Compile Include="UI\ExampleDialog.cs" />
     <Compile Include="UI\LauncherWindow.cs" />
+    <Compile Include="UI\VisualStyleWindow.cs" />
     <Compile Include="Utils\GameUtils.cs" />
     <Compile Include="Utils\PathUtils.cs" />
     <Compile Include="Utils\Singletons.cs" />

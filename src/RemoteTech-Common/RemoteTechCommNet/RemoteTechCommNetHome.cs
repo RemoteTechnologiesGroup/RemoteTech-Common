@@ -16,7 +16,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         private bool loadCompleted = false;
 
         [Persistent] public string ID;
-        [Persistent] public Color Color = HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().RemoteStationColorDot;
+        [Persistent] public Color Color = RemoteTechCommNetScenario.Instance.GroundStationDotColor;//future expansion of GS
         [Persistent] protected string OptionalName = "";
 
         public double altitude { get { return this.alt; } }
@@ -76,12 +76,12 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
-            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsOnDistance && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.1f && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
                 return;
 
             //draw the dot
             var previousColor = GUI.color;
-            GUI.color = this.Color;
+            GUI.color = RemoteTechCommNetScenario.Instance.GroundStationDotColor;
             GUI.DrawTexture(groundStationRect, markTexture, ScaleMode.ScaleToFit, true);
             GUI.color = previousColor;
 
