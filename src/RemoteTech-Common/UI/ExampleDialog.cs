@@ -82,7 +82,7 @@ namespace RemoteTech.Common.UI
             funImage.uiItem.GetComponent<RawImage>().texture = imageTxt;
         }
 
-        protected override List<DialogGUIBase> drawContentComponents()
+        protected override List<DialogGUIBase> Draw()
         {
             List<DialogGUIBase> contentComponents = new List<DialogGUIBase>();
 

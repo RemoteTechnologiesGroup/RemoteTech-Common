@@ -31,11 +31,21 @@ namespace RemoteTech.Common.RemoteTechCommNet
             MultiPaths
         }
 
+        public enum RemoteTechMapFilter
+        {
+            None = 0,
+            OmniLine = 1,
+            DishLine = 2,
+            DishCone = 4,
+            VisualRange = 8
+        }
+
         //New variables related to display mode
         public static CustomDisplayMode CustomMode = CustomDisplayMode.Path;
         public static CustomDisplayMode CustomModeTrackingStation = CustomDisplayMode.Network;
         public static CustomDisplayMode CustomModeFlightMap = CustomDisplayMode.Path;
         private static int CustomModeCount = Enum.GetValues(typeof(CustomDisplayMode)).Length;
+        public static RemoteTechMapFilter RTMapFilter = RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine;
 
         public static new RemoteTechCommNetUI Instance
         {
@@ -134,10 +144,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
 
             this.points.Clear();
+            /*
+            //distraction
             ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_118264", new string[]
             {
                 Localizer.Format(RemoteTechCommNetUI.CustomMode.displayDescription())
             }), 5f);
+            */
         }
 
         /// <summary>
@@ -158,10 +171,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
 
             this.points.Clear();
+            /*
+            //distraction
             ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_118530", new string[]
             {
                 Localizer.Format(RemoteTechCommNetUI.CustomMode.displayDescription())
             }), 5f);
+            */
         }
 
         /// <summary>
@@ -205,10 +221,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
                     if (CustomModeTrackingStation != CustomDisplayMode.Network && CustomModeTrackingStation != CustomDisplayMode.MultiPaths)
                     {
                         CustomModeTrackingStation = CustomDisplayMode.Network;
+                        /*
+                        //distraction
                         ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_118264", new string[]
                         {
                             Localizer.Format(CustomModeTrackingStation.displayDescription())
                         }), 5f);
+                        */
                     }
                 }
             }

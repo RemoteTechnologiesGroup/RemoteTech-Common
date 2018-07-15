@@ -11,7 +11,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
     /// </summary>
     public class RemoteTechCommNetHome : CommNetHome, IComparable<RemoteTechCommNetHome>
     {
-        private static readonly Texture2D markTexture = UiUtils.LoadTexture("groundStationMark");
+        private static readonly Texture2D markTexture = UiUtils.LoadTexture("GroundStationMark");
         private static GUIStyle groundStationHeadline;
         private bool loadCompleted = false;
 
@@ -76,7 +76,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
-            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.1f && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.0f && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
                 return;
 
             //draw the dot

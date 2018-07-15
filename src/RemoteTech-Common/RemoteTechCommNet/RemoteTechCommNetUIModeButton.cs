@@ -37,7 +37,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         {
             if (this.initialised)
             {
-                var text = Localizer.Format("#autoLOC_6002257") + ": " + RemoteTechCommNetUI.CustomMode.displayDescription();
+                var text = "Show links: " + RemoteTechCommNetUI.CustomMode.displayDescription();
                 if (this.tooltip.textString != text)
                 {
                     this.tooltip.SetText(text);

@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using RemoteTech.Common.Interfaces;
+using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 namespace RemoteTech.Common.UI
 {
@@ -42,7 +44,8 @@ namespace RemoteTech.Common.UI
             processArguments(args);
         }
 
-        protected abstract List<DialogGUIBase> drawContentComponents();
+
+        protected abstract List<DialogGUIBase> Draw();
         protected virtual void OnAwake(System.Object[] args) { }
         protected virtual void OnPreDismiss() { }
         protected virtual void OnUpdate() { }
@@ -122,7 +125,7 @@ namespace RemoteTech.Common.UI
         /// <summary>
         /// Close and deallocate the dialog
         /// </summary>
-        public void dismiss()
+        public void Dismiss()
         {
             if (this.isDisplayed && popupDialog != null)
             {
@@ -177,7 +180,7 @@ namespace RemoteTech.Common.UI
             List<DialogGUIBase> dialogComponentList;
 
             //content
-            var contentComponentList = drawContentComponents();
+            var contentComponentList = Draw();
 
             if (contentComponentList == null)
             {
@@ -196,7 +199,7 @@ namespace RemoteTech.Common.UI
                 footer = new DialogGUIBase[]
                     {
                     new DialogGUIFlexibleSpace(),
-                    new DialogGUIButton(dismissButtonText, dismiss),
+                    new DialogGUIButton(dismissButtonText, Dismiss),
                     new DialogGUIFlexibleSpace()
                     };
                 dialogComponentList.Add(new DialogGUIHorizontalLayout(footer));

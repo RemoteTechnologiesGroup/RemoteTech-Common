@@ -59,6 +59,7 @@
     <Compile Include="Interfaces\IDelayManager.cs" />
     <Compile Include="Interfaces\IRemoteTechSettings.cs" />
     <Compile Include="Interfaces\ISignalProcessorUnit.cs" />
+    <Compile Include="Interfaces\IUnityWindow.cs" />
     <Compile Include="RangeModels\RootRangeModel.cs" />
     <Compile Include="RangeModels\StandardRangeModel.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetBody.cs" />
@@ -77,9 +78,11 @@
     <Compile Include="UI\AbstractDialog.cs" />
     <Compile Include="UI\ColorPickerDialog.cs" />
     <Compile Include="UI\ExampleDialog.cs" />
+    <Compile Include="UI\FilterOverlay.cs" />
     <Compile Include="UI\LauncherWindow.cs" />
     <Compile Include="UI\VisualStyleWindow.cs" />
     <Compile Include="Utils\GameUtils.cs" />
+    <Compile Include="Utils\GUITextureButtonFactory.cs" />
     <Compile Include="Utils\PathUtils.cs" />
     <Compile Include="Utils\Singletons.cs" />
     <Compile Include="Utils\TimeConverters.cs" />

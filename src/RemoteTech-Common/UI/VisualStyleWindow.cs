@@ -25,7 +25,7 @@ namespace RemoteTech.Common.UI
         {
         }
 
-        protected override List<DialogGUIBase> drawContentComponents()
+        protected override List<DialogGUIBase> Draw()
         {
             List<DialogGUIBase> componments = new List<DialogGUIBase>();
 

@@ -1,8 +1,11 @@
 ﻿using CommNet;
 using KSP.UI.Screens.Flight;
 using KSP.UI.TooltipTypes;
+using RemoteTech.Common.Utils;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static RemoteTech.Common.RemoteTechCommNet.RemoteTechCommNetUI;
 
 namespace RemoteTech.Common.RemoteTechCommNet
 {
@@ -82,6 +85,89 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
     public class RemoteTechTelemetryUpdate: TelemetryUpdate
     {
+        public class CustomTextures
+        {
+            public Texture2D OmniDishTxt;
+            public Texture2D ConeTxt;
+            public Texture2D DishTargetTxt;
+            public Texture2D VisualRangeTxt;
+            public Texture2D TempTxt;
+
+            public Sprite OmniDishSprite;
+            public Sprite ConeSprite;
+            public Sprite DishTargetSprite;
+            public Sprite VisualRangeSprite;
+            public Sprite TempSprite;
+
+            public CustomTextures()
+            {          
+                OmniDishTxt = UiUtils.LoadTexture("DishOmniButtonBoth");
+                ConeTxt = UiUtils.LoadTexture("ConeButtonActive");
+                DishTargetTxt = UiUtils.LoadTexture("DishTargetButtonValid");
+                VisualRangeTxt = UiUtils.LoadTexture("VisualRangeButtonOn");
+                TempTxt = UiUtils.LoadTexture("Temp");
+
+                OmniDishSprite = Sprite.Create(OmniDishTxt, new Rect(0, 0, OmniDishTxt.width, OmniDishTxt.height), new Vector2(0, 0));
+                ConeSprite = Sprite.Create(ConeTxt, new Rect(0, 0, ConeTxt.width, ConeTxt.height), new Vector2(0, 0));
+                DishTargetSprite = Sprite.Create(DishTargetTxt, new Rect(0, 0, DishTargetTxt.width, DishTargetTxt.height), new Vector2(0, 0));
+                VisualRangeSprite = Sprite.Create(VisualRangeTxt, new Rect(0, 0, VisualRangeTxt.width, VisualRangeTxt.height), new Vector2(0, 0));
+                TempSprite = Sprite.Create(TempTxt, new Rect(0, 0, TempTxt.width, TempTxt.height), new Vector2(0, 0));
+            }
+        }
+
+        private static CustomTextures mTextures = null;
+        public static CustomTextures Textures
+        {
+            get
+            {
+                if (mTextures == null) { mTextures = new CustomTextures(); }
+                return mTextures;
+            }
+        }
+
+        protected HorizontalLayoutGroup TelemetryLayoutGroup = null;
+
+        protected Image LineTypeImage;
+        protected Image DishReachImage;
+        protected Image DishTargetImage;
+        protected Image VisualRangeImage;
+
+        protected const string LineTypeName = "linetype_name";
+        protected const string DishReachName = "dishreach_name";
+        protected const string DishTargetName = "dishtarget_name";
+        protected const string VisualRangeName = "vrange_name";
+
+        public class ClickAction : MonoBehaviour, IPointerClickHandler
+        {
+            public void OnPointerClick(PointerEventData eventData)
+            {
+                if (eventData.eligibleForClick)
+                {
+                    switch (eventData.pointerPress.name)
+                    {
+                        case LineTypeName:
+                            RemoteTechTelemetryUpdate.OnClickLineType();
+                            break;
+                        case DishReachName:
+                            RemoteTechTelemetryUpdate.OnClickDishReach();
+                            break;
+                        case DishTargetName:
+                            RemoteTechTelemetryUpdate.OnClickDishTarget();
+                            break;
+                        case VisualRangeName:
+                            RemoteTechTelemetryUpdate.OnClickVisualRange();
+                            break;
+                        default:
+                            //do nothing
+                            break;
+                    }
+
+                    //update icon
+                    RemoteTechCommNetScenario.Instance.Telemetry.RefreshIcons();
+                }
+            }
+        }
+
         public static new RemoteTechTelemetryUpdate Instance
         {
             get;
@@ -127,6 +213,22 @@ namespace RemoteTech.Common.RemoteTechCommNet
             this.signal_tooltip = stockTUData.signal_tooltip;
         }
 
+        protected override void Start()
+        {
+            if(TelemetryLayoutGroup == null)
+            {
+                TelemetryLayoutGroup = GameObject.Find("_UIMaster").GetChild("Background_Lg").GetComponent<HorizontalLayoutGroup>(); //KSP destroys it when exiting scene
+            }
+
+            LineTypeImage = createImageButton(this.BLK, LineTypeName);
+            DishReachImage = createImageButton(this.BLK, DishReachName);
+            DishTargetImage = createImageButton(this.BLK, DishTargetName);
+            VisualRangeImage = createImageButton(this.BLK, VisualRangeName);
+
+            MapView.OnEnterMapView += OnEnterMapView;
+            MapView.OnExitMapView += OnExitMapView;
+        }
+
         protected override void Awake()
         {
             //overrode to turn off stock's instance check
@@ -135,6 +237,218 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 UnityEngine.Object.DestroyImmediate(TelemetryUpdate.Instance);
                 TelemetryUpdate.Instance = this;
             }
+        }
+
+        protected override void OnDestroy()
+        {
+            MapView.OnEnterMapView -= OnEnterMapView;
+            MapView.OnExitMapView -= OnExitMapView;
+
+            DishTargetImage.gameObject.DestroyGameObjectImmediate();
+            LineTypeImage.gameObject.DestroyGameObjectImmediate();
+            DishReachImage.gameObject.DestroyGameObjectImmediate();
+            VisualRangeImage.gameObject.DestroyGameObjectImmediate();
+        }
+
+        public void RefreshIcons()
+        {
+            OnEnterMapView();
+        }
+
+        public void OnEnterMapView()
+        {
+            SetIcon(LineTypeImage, LineTypeSprite, true);
+            SetIcon(DishReachImage, DishReachSprite, true);
+            SetIcon(DishTargetImage, DishTargetSprite, true);
+            SetIcon(VisualRangeImage, VisualRangeSprite, true);
+
+            SetTooltipText(LineTypeImage, LineTypeTooltip);
+            SetTooltipText(DishReachImage, DishReachTooltip);
+            SetTooltipText(DishTargetImage, DishTargetTooltip);
+            SetTooltipText(VisualRangeImage, VisualRangeTooltip);
+        }
+
+        public void OnExitMapView()
+        {
+            SetIcon(LineTypeImage, this.BLK, true);
+            SetIcon(DishReachImage, this.BLK, true);
+            SetIcon(DishTargetImage, this.BLK, true);
+            SetIcon(VisualRangeImage, this.BLK, true);
+        }
+
+        protected override void ClearGui()
+        {
+            base.ClearGui();
+            OnExitMapView();
+        }
+
+        private Image createImageButton(Sprite sprite, string name)
+        {
+            Image NewImage = Object.Instantiate(this.control_icon);
+            NewImage.gameObject.name = name;
+            NewImage.sprite = sprite;
+            NewImage.transform.SetParent(TelemetryLayoutGroup.transform);
+            NewImage.gameObject.SetActive(false);
+            NewImage.gameObject.AddComponent<ClickAction>();
+
+            return NewImage;
+        }
+
+        private void SetTooltipText(Image img, string newText)
+        {
+            var tip = img.GetComponentInChildren<TooltipController_Text>();
+            if (tip != null) { tip.SetText(newText); }
+        }
+
+        private Sprite DishReachSprite
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                return ((mask & RemoteTechMapFilter.DishCone) == RemoteTechMapFilter.DishCone) ? Textures.ConeSprite : Textures.TempSprite;
+            }
+        }
+
+        private string DishReachTooltip
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                return ((mask & RemoteTechMapFilter.DishCone) == RemoteTechMapFilter.DishCone) ? "Show dish cones" : "No dish cones";
+            }
+        }
+
+        private Sprite DishTargetSprite
+        {
+            get
+            {
+                return Textures.DishTargetSprite;
+            }
+        }
+
+        private string DishTargetTooltip
+        {
+            get
+            {
+                return "Open a window on Active Vessel's all dishes and their targets."+
+                        "\nDishes marked in green are activated and those marked in red are deactivated."+
+                        "\nClicking on any dish in the list will pull up the target selection window for that dish.";
+            }
+        }
+
+        private Sprite LineTypeSprite
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                if ((mask & (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine)) == (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine))
+                {
+                    return Textures.OmniDishSprite;
+                }
+                else if ((mask & RemoteTechMapFilter.OmniLine) == RemoteTechMapFilter.OmniLine)
+                {
+                    return Textures.TempSprite;
+                }
+                else if ((mask & RemoteTechMapFilter.DishLine) == RemoteTechMapFilter.DishLine)
+                {
+                    return Textures.TempSprite;
+                }
+                else //off
+                {
+                    return Textures.TempSprite;
+                }
+            }
+        }
+
+        private string LineTypeTooltip
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                if ((mask & (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine)) == (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine))
+                {
+                    return "Omni and dish links";
+                }
+                else if ((mask & RemoteTechMapFilter.OmniLine) == RemoteTechMapFilter.OmniLine)
+                {
+                    return "Omni links only";
+                }
+                else if ((mask & RemoteTechMapFilter.DishLine) == RemoteTechMapFilter.DishLine)
+                {
+                    return "Dish links only";
+                }
+                else //off
+                {
+                    return "No links";
+                }
+            }
+        }
+
+        private Sprite VisualRangeSprite
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                return ((mask & RemoteTechMapFilter.VisualRange) == RemoteTechMapFilter.VisualRange) ? Textures.VisualRangeSprite : Textures.TempSprite;
+            }
+        }
+
+        private string VisualRangeTooltip
+        {
+            get
+            {
+                RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+                return ((mask & RemoteTechMapFilter.VisualRange) == RemoteTechMapFilter.VisualRange) ? "Show visual ranges" : "No visual ranges";
+            }
+        }
+
+        public static void OnClickLineType()
+        {
+            RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+            if ((mask & (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine)) == (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine))
+            {
+                RemoteTechCommNetUI.RTMapFilter &= ~((RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine));
+                return;
+            }
+            if ((mask & RemoteTechMapFilter.OmniLine) == RemoteTechMapFilter.OmniLine)
+            {
+                RemoteTechCommNetUI.RTMapFilter &= ~RemoteTechMapFilter.OmniLine;
+                RemoteTechCommNetUI.RTMapFilter |= RemoteTechMapFilter.DishLine;
+                return;
+            }
+            if ((mask & RemoteTechMapFilter.DishLine) == RemoteTechMapFilter.DishLine)
+            {
+                RemoteTechCommNetUI.RTMapFilter |= (RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine);
+                return;
+            }
+            RemoteTechCommNetUI.RTMapFilter |= RemoteTechMapFilter.OmniLine;
+        }
+
+        public static void OnClickDishReach()
+        {
+            RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+            if ((mask & RemoteTechMapFilter.DishCone) == RemoteTechMapFilter.DishCone)
+            {
+                RemoteTechCommNetUI.RTMapFilter &= ~RemoteTechMapFilter.DishCone;
+                return;
+            }
+            RemoteTechCommNetUI.RTMapFilter |= RemoteTechMapFilter.DishCone;
+        }
+
+        public static void OnClickDishTarget()
+        {
+
+        }
+
+        public static void OnClickVisualRange()
+        {
+            RemoteTechMapFilter mask = RemoteTechCommNetUI.RTMapFilter;
+            if ((mask & RemoteTechMapFilter.VisualRange) == RemoteTechMapFilter.VisualRange)
+            {
+                RemoteTechCommNetUI.RTMapFilter &= ~RemoteTechMapFilter.VisualRange;
+                return;
+            }
+            RemoteTechCommNetUI.RTMapFilter |= RemoteTechMapFilter.VisualRange;
         }
     }
 }

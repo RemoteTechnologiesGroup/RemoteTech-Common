@@ -39,13 +39,13 @@ namespace RemoteTech.Common
         [GameParameters.CustomParameterUI("Mouseover of Ground Stations", toolTip = "ON: Some useful information is shown when you mouseover a Ground Station on the map view or Tracking Station.\nOFF: Information isn't shown during mouseover.")]
         public bool ShowMouseOverInfoGroundStations = true;
 
-        [GameParameters.CustomFloatParameterUI("Distance from Ground Stations", toolTip = "If distance between Ground Stations and you is greater than this, Ground Stations will not be displayed.", minValue = 0, maxValue = 30000000f, stepCount = 500000)]
+        [GameParameters.CustomFloatParameterUI("Distance from Ground Stations", toolTip = "If distance in meter between Ground Stations and you is greater than this,\nGround Stations will not be displayed.", minValue = 1000000, maxValue = 30000000f, stepCount = 500000)]
         public float DistanceToHideGroundStations = 8000000;      
 
         [GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
         public string cheatDesc = " \n<b><u>Cheats</u></b>";
 
-        [GameParameters.CustomParameterUI("Connection required to control antennas", toolTip = "ON: antennas can be activated, deactivated and targeted without a connection.\nOFF: No control without a working connection.")]
+        [GameParameters.CustomParameterUI("Connection required to control antennas", toolTip = "ON: Antennas can be activated, deactivated and targeted without a connection.\nOFF: No control without a working connection.")]
         public bool ControlAntennaWithConnection = true;
 
         [GameParameters.CustomParameterUI("Planets and moons will block a signal", toolTip = "ON: Antennas and dishes will not need line-of-sight to maintain a connection, as long as they have adequate range and power.\nOFF: Antennas and dishes need line-of-sight to maintain a connection.")]

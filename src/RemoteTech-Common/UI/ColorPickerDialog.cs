@@ -86,7 +86,7 @@ namespace CommNetConstellation.UI
             }
         }
 
-        protected override List<DialogGUIBase> drawContentComponents()
+        protected override List<DialogGUIBase> Draw()
         {
             List<DialogGUIBase> listComponments = new List<DialogGUIBase>();
 

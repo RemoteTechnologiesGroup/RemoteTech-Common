@@ -22,7 +22,15 @@ namespace RemoteTech.Common.RemoteTechCommNet
         private RemoteTechCommNetUI customUI = null;
         private RemoteTechCommNetNetwork customNetwork = null;
         private RemoteTechTelemetryUpdate customCommNetTelemetry = null;
+        public RemoteTechTelemetryUpdate Telemetry
+        {
+            get { return customCommNetTelemetry; }
+        }
         private RemoteTechCommNetUIModeButton customCommNetModeButton = null;
+        public CommNetUIModeButton ModeButton()
+        {
+            return customCommNetModeButton;
+        }
 
         //Other settings
         public Color DishConnectionColor = new Color(1.0f, 0.70f, 0.03f, 1f);
@@ -151,6 +159,9 @@ namespace RemoteTech.Common.RemoteTechCommNet
                         case "DisplayModeFlight":
                             RemoteTechCommNetUI.CustomModeFlightMap = (RemoteTechCommNetUI.CustomDisplayMode)((int)Enum.Parse(typeof(RemoteTechCommNetUI.CustomDisplayMode), value.value));
                             break;
+                        case "RemoteTechMapFilter":
+                            RemoteTechCommNetUI.RTMapFilter = (RemoteTechCommNetUI.RemoteTechMapFilter)((int)Enum.Parse(typeof(RemoteTechCommNetUI.RemoteTechMapFilter), value.value));
+                            break;
                         case "DishConnectionColor":
                             DishConnectionColor = UiUtils.StringToColor(value.value);
                             break;
@@ -185,6 +196,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 //Other variables
                 gameNode.AddValue("DisplayModeTracking", RemoteTechCommNetUI.CustomModeTrackingStation);
                 gameNode.AddValue("DisplayModeFlight", RemoteTechCommNetUI.CustomModeFlightMap);
+                gameNode.AddValue("RemoteTechMapFilter", RemoteTechCommNetUI.RTMapFilter);
 
                 gameNode.AddValue("DishConnectionColor", UiUtils.ColorToString(DishConnectionColor));
                 gameNode.AddValue("OmniConnectionColor", UiUtils.ColorToString(OmniConnectionColor));
