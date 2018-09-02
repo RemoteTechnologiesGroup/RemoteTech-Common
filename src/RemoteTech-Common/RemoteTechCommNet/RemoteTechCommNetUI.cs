@@ -46,6 +46,8 @@ namespace RemoteTech.Common.RemoteTechCommNet
         public static CustomDisplayMode CustomModeFlightMap = CustomDisplayMode.Path;
         private static int CustomModeCount = Enum.GetValues(typeof(CustomDisplayMode)).Length;
         public static RemoteTechMapFilter RTMapFilter = RemoteTechMapFilter.OmniLine | RemoteTechMapFilter.DishLine;
+        private static float Line3DWidth = 1f;
+        private static float Line2DWidth = 1f;
 
         public static new RemoteTechCommNetUI Instance
         {
@@ -53,12 +55,31 @@ namespace RemoteTech.Common.RemoteTechCommNet
             protected set;
         }
 
+        protected override void Start()
+        {
+            base.Start();
+            if (Versioning.version_major == 1)
+            {
+                switch (Versioning.version_minor)
+                {
+                    case 3:
+                        Line3DWidth = 2f; //4f is too thick in 1.3
+                        Line2DWidth = 3f;
+                        break;
+                    default:
+                        Line3DWidth = Line2DWidth = 1f;
+                        break;
+                }
+            }
+        }
+
         /// <summary>
         /// Activate things when the player enter a scene that uses CommNet UI
         /// </summary>
         public override void Show()
         {
-            this.lineWidth3D = this.lineWidth2D; //lineWidth3D=1 is too thin to see
+            this.lineWidth3D = Line3DWidth;
+            this.lineWidth2D = Line2DWidth;
             registerMapNodeIconCallbacks();
             base.Show();
         }
