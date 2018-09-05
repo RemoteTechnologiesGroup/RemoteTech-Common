@@ -1,7 +1,6 @@
-﻿using RemoteTech.Common.Interfaces;
+﻿using RemoteTech.Common.Utils;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
 
 namespace RemoteTech.Common.UI
 {
@@ -17,7 +16,6 @@ namespace RemoteTech.Common.UI
     /// </summary>
     public abstract class AbstractDialog
     {
-        protected bool isDisplayed = false;
         protected string dialogHandler;
         protected string dialogTitle;
         protected int windowWidth;
@@ -114,24 +112,24 @@ namespace RemoteTech.Common.UI
         /// </summary>
         public void launch(System.Object[] args)
         {
-            if (this.isDisplayed)
-                return;
+            if (popupDialog != null) { return; }
 
-            this.isDisplayed = true;
             popupDialog = spawnDialog();
+            //TODO: only available in KSP 1.4 and above
+            //popupDialog.OnDismiss = new Callback(dismiss); 
             OnAwake(args);
         }
 
         /// <summary>
         /// Close and deallocate the dialog
         /// </summary>
-        public void Dismiss()
+        public void dismiss()
         {
-            if (this.isDisplayed && popupDialog != null)
+            if (popupDialog != null)
             {
                 OnPreDismiss();
                 popupDialog.Dismiss();
-                this.isDisplayed = false;
+                popupDialog = null;
             }
         }
 
@@ -199,7 +197,7 @@ namespace RemoteTech.Common.UI
                 footer = new DialogGUIBase[]
                     {
                     new DialogGUIFlexibleSpace(),
-                    new DialogGUIButton(dismissButtonText, Dismiss),
+                    new DialogGUIButton(dismissButtonText, dismiss),
                     new DialogGUIFlexibleSpace()
                     };
                 dialogComponentList.Add(new DialogGUIHorizontalLayout(footer));

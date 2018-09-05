@@ -22,9 +22,10 @@ namespace RemoteTech.Common
          * Application Launcher
          */
         /// <summary>Application Launcher Window</summary>
-        protected LauncherWindow launcherWindow;
+        protected AbstractDialog LauncherWindow = null;
+        protected Type LauncherWindowType;
         /// <summary>Button for KSP Stock Tool bar</summary>
-        protected ApplicationLauncherButton LauncherButton;
+        protected ApplicationLauncherButton LauncherButton = null;
         /// <summary>Texture for the KSP Stock Tool-bar Button</summary>
         protected static readonly Texture2D AppLauncherTexture = UiUtils.LoadTexture("RTLauncher");
 
@@ -235,6 +236,73 @@ namespace RemoteTech.Common
                 if (!InputLockManager.lockStack.Any(l => ((ControlTypes)l.Value & ControlTypes.CUSTOM_ACTION_GROUPS) == ControlTypes.CUSTOM_ACTION_GROUPS && !l.Key.Equals("RTLockActions")))
                     yield return KSPActionGroup.Custom10;
         }
+
+        /// -----------------------------------------------------
+        /// Methods for Application Launcher
+        /// -----------------------------------------------------
+
+        /// <summary>
+        /// One-line setup on application launcher
+        /// </summary>
+        protected virtual void SetupAppLauncher(ApplicationLauncher.AppScenes targetScenes, Type windowType)
+        {
+            LauncherWindowType = windowType;
+            LauncherButton = ApplicationLauncher.Instance.AddModApplication(
+                LauncherOpen, LauncherClose, LauncherHover, LauncherHoverOut, LauncherEnable, LauncherDisable,
+                targetScenes, AppLauncherTexture);
+        }
+
+        /// <summary>
+        /// When user clicks app button for first time
+        /// </summary>
+        protected virtual void LauncherOpen()
+        {
+            if (LauncherWindow == null)
+            {
+                LauncherWindow = (AbstractDialog) Activator.CreateInstance(LauncherWindowType, new object[] { });
+            }
+            LauncherWindow.launch();
+        }
+
+        /// <summary>
+        /// When user clicks app button for second time
+        /// </summary>
+        protected virtual void LauncherClose()
+        {
+            if (LauncherWindow != null)
+            {
+                LauncherWindow.dismiss();
+                LauncherWindow = null;
+            }
+        }
+
+        /// <summary>
+        /// Called when scene is entered
+        /// </summary>
+        protected virtual void LauncherEnable()
+        {
+        }
+
+        /// <summary>
+        /// Called when scene is exited
+        /// </summary>
+        protected virtual void LauncherDisable()
+        {
+        }
+
+        /// <summary>
+        /// Called when mouse cursor is over app button
+        /// </summary>
+        protected virtual void LauncherHover()
+        {
+        }
+
+        /// <summary>
+        /// Called when mouse cursor is out of app button
+        /// </summary>
+        protected virtual void LauncherHoverOut()
+        {
+        }
     }
 
     /// -----------------------------------------------------
@@ -249,11 +317,7 @@ namespace RemoteTech.Common
             base.Start();
             if (Instance == null) { return; }
 
-            launcherWindow = new LauncherWindow();
-            LauncherButton = ApplicationLauncher.Instance.AddModApplication(
-                launcherWindow.launch, launcherWindow.Dismiss, null, null, null, null,
-                ApplicationLauncher.AppScenes.SPACECENTER,
-                AppLauncherTexture);
+            SetupAppLauncher(ApplicationLauncher.AppScenes.SPACECENTER, typeof(LauncherWindow));
         }
     }
 
@@ -265,11 +329,7 @@ namespace RemoteTech.Common
             base.Start();
             if (Instance == null) { return; }
 
-            launcherWindow = new LauncherWindow();
-            LauncherButton = ApplicationLauncher.Instance.AddModApplication(
-                launcherWindow.launch, launcherWindow.Dismiss, null, null, null, null,
-                ApplicationLauncher.AppScenes.FLIGHT,
-                AppLauncherTexture);
+            SetupAppLauncher(ApplicationLauncher.AppScenes.FLIGHT, typeof(LauncherWindow));
         }
 
         public new void OnDestroy()
@@ -292,12 +352,7 @@ namespace RemoteTech.Common
             base.Start();
             if (Instance == null) { return; }
 
-            //Application Launcher
-            launcherWindow = new LauncherWindow();
-            LauncherButton = ApplicationLauncher.Instance.AddModApplication(
-                launcherWindow.launch, launcherWindow.Dismiss, null, null, null, null,
-                ApplicationLauncher.AppScenes.TRACKSTATION,
-                AppLauncherTexture);
+            SetupAppLauncher(ApplicationLauncher.AppScenes.TRACKSTATION, typeof(LauncherWindow));
 
             //Filter Bar
             FilterBar = new FilterOverlay();
