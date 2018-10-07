@@ -277,6 +277,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             //work out which links to display
             var count = this.points.Count;//save previous value
             var numLinks = 0;
+            var pathLinkExist = false;
             switch (RemoteTechCommNetUI.CustomMode)
             {
                 case RemoteTechCommNetUI.CustomDisplayMode.None:
@@ -328,8 +329,9 @@ namespace RemoteTech.Common.RemoteTechCommNet
                     }
                     else
                     {
-                        var newPath = new CommPath();
-                        var nodes = net;
+                        path = new CommPath();
+                        path.Capacity = net.Links.Count;
+
                         var vessels = FlightGlobals.fetch.vessels;
                         for (int i = 0; i < vessels.Count; i++)
                         {
@@ -344,19 +346,28 @@ namespace RemoteTech.Common.RemoteTechCommNet
                             if (!(CNvessel.ControlState == VesselControlState.Probe || CNvessel.ControlState == VesselControlState.Kerbal ||
                                 CNvessel.ControlPath == null || CNvessel.ControlPath.Count == 0))
                             {
-                                for (int pathIndex = 0; pathIndex < CNvessel.ControlPath.Count; pathIndex++)
+                                //add each link in control path to overall path
+                                for (int controlpathIndex = 0; controlpathIndex < CNvessel.ControlPath.Count; controlpathIndex++)
                                 {
-                                    var link = CNvessel.ControlPath[pathIndex];
-                                    if (newPath.Find(x => (RemoteTechCommNetwork.AreSame(x.a, link.a) && RemoteTechCommNetwork.AreSame(x.b, link.b))) == null)//not found in list of links to be displayed
+                                    pathLinkExist = false;
+                                    for (int overallpathIndex = 0; overallpathIndex < path.Count; overallpathIndex++)//check if overall path has this link already
                                     {
-                                        newPath.Add(link); //laziness wins
+                                        if (RemoteTechCommNetwork.AreSame(path[overallpathIndex].a, CNvessel.ControlPath[controlpathIndex].a) &&
+                                            RemoteTechCommNetwork.AreSame(path[overallpathIndex].b, CNvessel.ControlPath[controlpathIndex].b))
+                                        {
+                                            pathLinkExist = true;
+                                            break;
+                                        }
+                                    }
+                                    if (!pathLinkExist)
+                                    {
+                                        path.Add(CNvessel.ControlPath[controlpathIndex]); //laziness wins
                                         //KSP techincally does not care if path is consisted of non-continuous links or not
                                     }
                                 }
                             }
                         }
 
-                        path = newPath;
                         path.GetPoints(this.points, true);
                         numLinks = path.Count;
                     }
@@ -396,54 +407,47 @@ namespace RemoteTech.Common.RemoteTechCommNet
             {
                 case RemoteTechCommNetUI.CustomDisplayMode.FirstHop:
                     {
-                        float lvl = Mathf.Pow((float)path.First.signalStrength, this.colorLerpPower);
-                        if (this.swapHighLow)
-                            this.line.SetColor(Color.Lerp(this.colorHigh, this.colorLow, lvl), 0);
-                        else
-                            this.line.SetColor(Color.Lerp(this.colorLow, this.colorHigh, lvl), 0);
-                        break;
+                            this.line.SetColor(colorBlending(this.colorHigh,
+                                                             this.colorLow,
+                                                             Mathf.Pow((float)path.First.signalStrength, this.colorLerpPower)),
+                                                             0);
+                            break;
                     }
                 case RemoteTechCommNetUI.CustomDisplayMode.Path:
                 case RemoteTechCommNetUI.CustomDisplayMode.MultiPaths:
                     {
-                        int linkIndex = numLinks;
-                        for (int i = linkIndex - 1; i >= 0; i--)
-                        {
-                            float lvl = Mathf.Pow((float)path[i].signalStrength, this.colorLerpPower);
-                            if (this.swapHighLow)
-                                this.line.SetColor(Color.Lerp(this.colorHigh, this.colorLow, lvl), i);
-                            else
-                                this.line.SetColor(Color.Lerp(this.colorLow, this.colorHigh, lvl), i);
-                        }
-                        break;
+                            for (int i = numLinks - 1; i >= 0; i--)
+                            {
+                                this.line.SetColor(colorBlending(this.colorHigh,
+                                                                 this.colorLow,
+                                                                 Mathf.Pow((float)path[i].signalStrength, this.colorLerpPower)),
+                                                                 i);
+                            }
+                            break;
                     }
                 case RemoteTechCommNetUI.CustomDisplayMode.VesselLinks:
                     {
-                        var itr = node.Values.GetEnumerator();
-                        int linkIndex = 0;
-                        while (itr.MoveNext())
-                        {
-                            CommLink link = itr.Current;
-                            float lvl = Mathf.Pow((float)link.GetSignalStrength(link.a != node, link.b != node), this.colorLerpPower);
-                            if (this.swapHighLow)
-                                this.line.SetColor(Color.Lerp(this.colorHigh, this.colorLow, lvl), linkIndex++);
-                            else
-                                this.line.SetColor(Color.Lerp(this.colorLow, this.colorHigh, lvl), linkIndex++);
-                        }
-                        break;
+                            CommLink[] links = new CommLink[node.Count];
+                            node.Values.CopyTo(links, 0);
+                            for (int i = 0; i < links.Length; i++)
+                            {
+                                this.line.SetColor(colorBlending(this.colorHigh,
+                                                                 this.colorLow,
+                                                                 Mathf.Pow((float)links[i].GetSignalStrength(links[i].a != node, links[i].b != node), this.colorLerpPower)),
+                                                                 i);
+                            }
+                            break;
                     }
                 case RemoteTechCommNetUI.CustomDisplayMode.Network:
                     {
-                        for (int i = numLinks - 1; i >= 0; i--)
-                        {
-                            CommLink commLink = net.Links[i];
-                            float lvl = Mathf.Pow((float)net.Links[i].GetBestSignal(), this.colorLerpPower);
-                            if (this.swapHighLow)
-                                this.line.SetColor(Color.Lerp(this.colorHigh, this.colorLow, lvl), i);
-                            else
-                                this.line.SetColor(Color.Lerp(this.colorLow, this.colorHigh, lvl), i);
-                        }
-                        break;
+                            for (int i = numLinks - 1; i >= 0; i--)
+                            {
+                                this.line.SetColor(colorBlending(this.colorHigh,
+                                                                 this.colorLow,
+                                                                 Mathf.Pow((float)net.Links[i].GetBestSignal(), this.colorLerpPower)),
+                                                                 i);
+                            }
+                            break;
                     }
             } // end of switch
 
@@ -456,6 +460,25 @@ namespace RemoteTech.Common.RemoteTechCommNet
             {
                 this.line.SetWidth(this.lineWidth2D);
                 this.line.Draw();
+            }
+        }
+
+        /// <summary>
+        /// Compute final color based on inputs
+        /// </summary>
+        private Color colorBlending(Color colorHigh, Color colorLow, float colorLevel)
+        {
+            if (colorHigh == Color.clear)
+            {
+                return colorHigh;
+            }
+            else if (this.swapHighLow)
+            {
+                return Color.Lerp(colorHigh, colorLow, colorLevel);
+            }
+            else
+            {
+                return Color.Lerp(colorLow, colorHigh, colorLevel);
             }
         }
     }
