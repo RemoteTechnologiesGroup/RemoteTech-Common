@@ -17,17 +17,26 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>DEBUG;KSP13</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>KSP13</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RemoteNon13|AnyCPU'">
+    <DebugType>none</DebugType>
+    <OutputPath>bin\RemoteNon13\</OutputPath>
+    <DefineConstants></DefineConstants>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
@@ -81,6 +90,7 @@
     <Compile Include="UI\FilterOverlay.cs" />
     <Compile Include="UI\LauncherWindow.cs" />
     <Compile Include="UI\VisualStyleWindow.cs" />
+    <Compile Include="UI\DialogGUI\CustomDialogGUIScrollList.cs" />
     <Compile Include="Utils\GameUtils.cs" />
     <Compile Include="Utils\GUITextureButtonFactory.cs" />
     <Compile Include="Utils\PathUtils.cs" />
