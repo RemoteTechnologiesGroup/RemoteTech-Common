@@ -71,6 +71,7 @@
     <Compile Include="Interfaces\IUnityWindow.cs" />
     <Compile Include="RangeModels\RootRangeModel.cs" />
     <Compile Include="RangeModels\StandardRangeModel.cs" />
+    <Compile Include="RemoteTechCommNet\RemoteTechAntennaType.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetBody.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetHome.cs" />
     <Compile Include="RemoteTechCommNet\RemoteTechCommNetNetwork.cs" />
