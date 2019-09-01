@@ -3,6 +3,7 @@ using KSP.UI.Screens.Flight;
 using RemoteTech.Common.RangeModels;
 using RemoteTech.Common.Utils;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RemoteTech.Common.RemoteTechCommNet
@@ -39,6 +40,9 @@ namespace RemoteTech.Common.RemoteTechCommNet
         public Color GroundStationDotColor = new Color(1.0f, 0.0f, 0.0f, 1f);
         public Color LowSignalConnectionColor = new Color(1.0f, 0.0f, 0.0f, 1f);
         public Color DirectConnectionColor = new Color(0.0f, 0.75f, 0.95f, 1f);//part of signal non-relay connection
+
+        public List<RemoteTechCommNetHome> groundStations = new List<RemoteTechCommNetHome>();
+        private List<RemoteTechCommNetHome> persistentGroundStations = new List<RemoteTechCommNetHome>();
 
         public static new RemoteTechCommNetScenario Instance
         {
@@ -93,13 +97,26 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
 
             //Replace the CommNet ground stations
+            groundStations.Clear();
             var homes = FindObjectsOfType<CommNetHome>();
             for (int i = 0; i < homes.Length; i++)
             {
                 var customHome = homes[i].gameObject.AddComponent(typeof(RemoteTechCommNetHome)) as RemoteTechCommNetHome;
                 customHome.copyOf(homes[i]);
                 UnityEngine.Object.Destroy(homes[i]);
+                groundStations.Add(customHome);
             }
+            groundStations.Sort();
+
+            //Apply the ground-station changes from persistent.sfs
+            for (int i = 0; i < persistentGroundStations.Count; i++)
+            {
+                if (groundStations.Exists(x => x.ID.Equals(persistentGroundStations[i].ID)))
+                {
+                    groundStations.Find(x => x.ID.Equals(persistentGroundStations[i].ID)).applySavedChanges(persistentGroundStations[i]);
+                }
+            }
+            persistentGroundStations.Clear();//dont need anymore
 
             //Replace the CommNet celestial bodies
             var bodies = FindObjectsOfType<CommNetBody>();
@@ -145,6 +162,34 @@ namespace RemoteTech.Common.RemoteTechCommNet
             try
             {
                 Logging.Info("RemoteTech Scenario content to be read:\n{0}", gameNode);
+
+                //Ground stations
+                if (gameNode.HasNode("GroundStations"))
+                {
+                    ConfigNode stationNode = gameNode.GetNode("GroundStations");
+                    ConfigNode[] stationNodes = stationNode.GetNodes();
+
+                    if (stationNodes.Length < 1) // missing ground-station list
+                    {
+                        Logging.Error("The 'GroundStations' node is malformed! Reverted to the default list of ground stations.");
+                        //do nothing since KSP provides this default list
+                    }
+                    else
+                    {
+                        persistentGroundStations.Clear();
+                        for (int i = 0; i < stationNodes.Length; i++)
+                        {
+                            RemoteTechCommNetHome dummyGroundStation = new RemoteTechCommNetHome();
+                            ConfigNode.LoadObjectFromConfig(dummyGroundStation, stationNodes[i]);
+                            persistentGroundStations.Add(dummyGroundStation);
+                        }
+                    }
+                }
+                else
+                {
+                    Logging.Info("The 'GroundStations' node is not found. The default list of ground stations is loaded from KSP's data.");
+                    //do nothing since KSP provides this default list
+                }
 
                 //Other variables
                 for (int i = 0; i < gameNode.values.Count; i++)
@@ -193,6 +238,29 @@ namespace RemoteTech.Common.RemoteTechCommNet
         {
             try
             {
+                //Ground stations
+                if (gameNode.HasNode("GroundStations"))
+                {
+                    gameNode.RemoveNode("GroundStations");
+                }
+
+                ConfigNode stationNode = new ConfigNode("GroundStations");
+                for (int i = 0; i < groundStations.Count; i++)
+                {
+                    ConfigNode newGroundStationNode = new ConfigNode("GroundStation");
+                    newGroundStationNode = ConfigNode.CreateConfigFromObject(groundStations[i], newGroundStationNode);
+                    stationNode.AddNode(newGroundStationNode);
+                }
+
+                if (groundStations.Count <= 0)
+                {
+                    Logging.Error("No ground stations to save!");
+                }
+                else
+                {
+                    gameNode.AddNode(stationNode);
+                }
+
                 //Other variables
                 gameNode.AddValue("DisplayModeTracking", RemoteTechCommNetUI.CustomModeTrackingStation);
                 gameNode.AddValue("DisplayModeFlight", RemoteTechCommNetUI.CustomModeFlightMap);

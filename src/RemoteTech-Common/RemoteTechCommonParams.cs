@@ -18,6 +18,39 @@ namespace RemoteTech.Common
             Root,
         }
 
+        [Persistent]
+        private string UpgradeableGroundStationCosts = String.Empty;
+        private int[] _groundStationUpgradeableCosts;
+        public int[] GroundStationUpgradeableCosts
+        {
+            get
+            {
+                return _groundStationUpgradeableCosts;
+            }
+        }
+
+        [Persistent]
+        private string UpgradeableGroundStationPowers = String.Empty;
+        private double[] _groundStationUpgradeablePowers;
+        public double[] GroundStationUpgradeablePowers
+        {
+            get
+            {
+                return _groundStationUpgradeablePowers;
+            }
+        }
+
+        [Persistent]
+        private string KSCMissionControlPowers = String.Empty;
+        private double[] _KSCStationPowers;
+        public double[] KSCStationPowers
+        {
+            get
+            {
+                return _KSCStationPowers;
+            }
+        }
+
         //[GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
         //public string description = "Core functionality";
 
@@ -40,7 +73,7 @@ namespace RemoteTech.Common
         public bool ShowMouseOverInfoGroundStations = true;
 
         [GameParameters.CustomFloatParameterUI("Distance from Ground Stations", toolTip = "If distance in meter between Ground Stations and you is greater than this,\nGround Stations will not be displayed.", minValue = 1000000, maxValue = 30000000f, stepCount = 500000)]
-        public float DistanceToHideGroundStations = 8000000;      
+        public float DistanceToHideGroundStations = 8000000;
 
         [GameParameters.CustomStringParameterUI("", autoPersistance = false, lines = 2)]
         public string cheatDesc = " \n<b><u>Cheats</u></b>";
@@ -112,5 +145,68 @@ namespace RemoteTech.Common
 
             return true;
         }
+
+        protected static string _configDirectory = null;
+        protected string configDirectory
+        {
+            get
+            {
+                if (_configDirectory == null)
+                {
+                    _configDirectory = AssemblyLoader.loadedAssemblies.FirstOrDefault(a => a.assembly.GetName().Name.Equals("RemoteTech-Common")).url.Replace("/Plugins", "") + "/Configs/";
+                }
+                return _configDirectory;
+            }
+        }
+
+        public override void OnLoad(ConfigNode node)
+        {
+            base.OnLoad(node);
+
+            UrlDir.UrlConfig[] cfgs;
+
+            cfgs = GameDatabase.Instance.GetConfigs("RemoteTechTNGCommonSettings");
+            for (int i = 0; i < cfgs.Length; i++)
+            {
+                if (cfgs[i].url.Equals(configDirectory + "RemoteTechCommon_Settings/RemoteTechTNGCommonSettings"))
+                {
+                    if (!ConfigNode.LoadObjectFromConfig(this, cfgs[i].config))
+                    {
+                        Logging.Error("Unable to load RemoteTechCommon_Settings.cfg");
+                    }
+                    break;
+                }
+            }
+
+            if (this.UpgradeableGroundStationCosts != String.Empty)
+            {
+                var tokens = this.UpgradeableGroundStationCosts.Split(';');
+                _groundStationUpgradeableCosts = new int[tokens.Length];
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                     int.TryParse(tokens[i], out _groundStationUpgradeableCosts[i]);
+                }
+            }
+            if (this.UpgradeableGroundStationPowers != String.Empty)
+            {
+                var tokens = this.UpgradeableGroundStationPowers.Split(';');
+                _groundStationUpgradeablePowers = new double[tokens.Length];
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                    double.TryParse(tokens[i], out _groundStationUpgradeablePowers[i]);
+                }
+            }
+            if (this.KSCMissionControlPowers != String.Empty)
+            {
+                var tokens = this.KSCMissionControlPowers.Split(';');
+                _KSCStationPowers = new double[tokens.Length];
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                    double.TryParse(tokens[i], out _KSCStationPowers[i]);
+                }
+            }
+        }
+
+
     }
 }

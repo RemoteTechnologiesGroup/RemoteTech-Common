@@ -11,13 +11,21 @@ namespace RemoteTech.Common.RemoteTechCommNet
     /// </summary>
     public class RemoteTechCommNetHome : CommNetHome, IComparable<RemoteTechCommNetHome>
     {
-        private static readonly Texture2D markTexture = UiUtils.LoadTexture("GroundStationMark");
+        private static readonly Texture2D L0MarkTexture = UiUtils.LoadTexture("GroundStationL0Mark");
+        private static readonly Texture2D L1MarkTexture = UiUtils.LoadTexture("GroundStationL1Mark");
+        private static readonly Texture2D L2MarkTexture = UiUtils.LoadTexture("GroundStationL2Mark");
+        private static readonly Texture2D L3MarkTexture = UiUtils.LoadTexture("GroundStationL3Mark");
         private static GUIStyle groundStationHeadline;
+
         private bool loadCompleted = false;
 
+        private string stationInfoString = "";
+        private Texture2D stationTexture;
+
         [Persistent] public string ID;
-        [Persistent] public Color Color = RemoteTechCommNetScenario.Instance.GroundStationDotColor;//future expansion of GS
+        [Persistent] public Color Color = new Color(1.0f, 0.0f, 0.0f, 1f); //RemoteTechCommNetScenario.Instance.GroundStationDotColor; //issue: RemoteTechCommNetScenario.Instance not initialised yet
         [Persistent] protected string OptionalName = "";
+        [Persistent] public short TechLevel = 0;
 
         public double altitude { get { return this.alt; } }
         public double latitude { get { return this.lat; } }
@@ -51,6 +59,24 @@ namespace RemoteTech.Common.RemoteTechCommNet
             loadCompleted = true;
         }
 
+        protected override void CreateNode()
+        {
+            base.CreateNode();
+
+            if (this.isKSC)
+            {
+                this.TechLevel = (short)((2 * ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) + 1);
+            }
+
+            this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+            this.refresh();
+        }
+
         /// <summary>
         /// Draw graphic components on screen like RemoteTech's ground-station marks
         /// </summary>
@@ -82,12 +108,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
             //draw the dot
             var previousColor = GUI.color;
             GUI.color = RemoteTechCommNetScenario.Instance.GroundStationDotColor;
-            GUI.DrawTexture(groundStationRect, markTexture, ScaleMode.ScaleToFit, true);
+            GUI.DrawTexture(groundStationRect, stationTexture, ScaleMode.ScaleToFit, true);
             GUI.color = previousColor;
 
             //draw the headline below the dot
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().ShowMouseOverInfoGroundStations && UiUtils.ContainsMouse(groundStationRect))
             {
+                //Ground Station Name
                 var headlineRect = groundStationRect;
                 var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
                 headlineRect.x -= nameDim.x / 2 - 5;
@@ -96,39 +123,15 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 headlineRect.height = nameDim.y;
                 GUI.Label(headlineRect, this.nodeName, RemoteTechCommNetHome.groundStationHeadline);
 
-                /*
-                //TODO: display antenna info
-                // loop antennas
-                String antennaRanges = String.Empty;
-                foreach (var antenna in s.Antennas)
-                {
-                    if(antenna.Omni > 0)
-                    {
-                        antennaRanges += "Omni: "+ RTUtil.FormatSI(antenna.Omni,"m") + Environment.NewLine;
-                    }
-                    if (antenna.Dish > 0)
-                    {
-                        antennaRanges += "Dish: " + RTUtil.FormatSI(antenna.Dish, "m") + Environment.NewLine;
-                    }
-                }
-
-                if(!antennaRanges.Equals(String.Empty))
-                {
-                    Rect antennas = screenRect;
-                    GUIContent content = new GUIContent(antennaRanges);
-
-                    Vector2 antennaDim = this.smallStationText.CalcSize(content);
-                    float maxHeight = this.smallStationText.CalcHeight(content, antennaDim.x);
-
-                    antennas.y += headline.height - 3;
-                    antennas.x -= antennaDim.x + 10;
-                    antennas.width = antennaDim.x;
-                    antennas.height = maxHeight;
-
-                    // draw antenna infos of the station
-                    GUI.Label(antennas, antennaRanges, this.smallStationText);
-                }
-                */
+                //Ground Station Range Info
+                GUIContent rangeContent = new GUIContent(stationInfoString);
+                Vector2 rangeDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(rangeContent);
+                Rect rangeRect = groundStationRect;
+                rangeRect.x -= rangeDim.x / 2 - 5;
+                rangeRect.y += rangeDim.y - 5;
+                rangeRect.width = rangeDim.x;
+                rangeRect.height = rangeDim.y;
+                GUI.Label(rangeRect, rangeContent, RemoteTechCommNetHome.groundStationHeadline);
             }
         }
 
@@ -167,6 +170,98 @@ namespace RemoteTech.Common.RemoteTechCommNet
         public int CompareTo(RemoteTechCommNetHome other)
         {
             return this.stationName.CompareTo(other.stationName);
+        }
+
+        /// <summary>
+        /// Increment Tech Level Ground Station to max 3 and refresh the ground station
+        /// </summary>
+        public void incrementTechLevel()
+        {
+            if(this.TechLevel < 3 && !this.isKSC)
+            {
+                this.TechLevel++;
+                refresh();
+            }
+        }
+
+        /// <summary>
+        /// Apply the changes from persistent.sfs
+        /// </summary>
+        public void applySavedChanges(RemoteTechCommNetHome stationSnapshot)
+        {
+            this.Color = stationSnapshot.Color;
+            this.OptionalName = stationSnapshot.OptionalName;
+            this.TechLevel = stationSnapshot.TechLevel;
+        }
+
+        /// <summary>
+        /// Update relevant details based on Tech Level
+        /// </summary>
+        protected void refresh()
+        {
+            // Obtain Tech Level of Tracking Station in KCS
+            //if (this.isKSC)
+            //{
+            //    this.TechLevel = (short)((2 * ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) + 1);
+            //}
+
+            // Update power of ground station
+            if(this.comm != null)
+            {
+                this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
+            }
+
+            // Generate ground station information
+            stationInfoString = (this.TechLevel == 0) ? "Build a ground station" :
+                                                    string.Format("DSN Power: {1}\nBeamwidth: {2:0.00}°\nTech Level: {0}",
+                                                    this.TechLevel,
+                                                    UiUtils.RoundToNearestMetricFactor(this.comm.antennaRelay.power, 2),
+                                                    90.0);
+
+            // Generate visual ground station mark
+            switch (this.TechLevel)
+            {
+                case 0:
+                    stationTexture = L0MarkTexture;
+                    break;
+                case 1:
+                    stationTexture = L1MarkTexture;
+                    break;
+                case 2:
+                    stationTexture = L2MarkTexture;
+                    break;
+                case 3:
+                default:
+                    stationTexture = L3MarkTexture;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Custom DSN ranges instead of stock GameVariables.Instance.GetDSNRange
+        /// </summary>
+        /// Comment: Subclassing GameVariables.Instance.GetDSNRange to just change the ranges is too excessive at this point.
+        public double GetDSNRange(short level)
+        {
+            var ps = HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>();
+            double power;
+            if(this.isKSC)
+            {
+                power = ps.KSCStationPowers[level - 1];
+            }
+            else
+            {
+                if (level == 0)
+                {
+                    power = 0;
+                }
+                else
+                {
+                    power = ps.GroundStationUpgradeablePowers[level - 1];
+                }
+            }
+            
+            return power * ((double)HighLogic.CurrentGame.Parameters.CustomParams<CommNetParams>().DSNModifier);
         }
     }
 }

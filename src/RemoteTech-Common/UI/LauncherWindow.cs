@@ -21,10 +21,11 @@ namespace RemoteTech.Common.UI
         {
             List<DialogGUIBase> componments = new List<DialogGUIBase>();
 
+            DialogGUIButton groundStationButton = new DialogGUIButton("Ground Stations", delegate { new GroundStationWindow().launch(); }, false);
             DialogGUIButton antennaSimButton = new DialogGUIButton("Antenna Simulator", delegate { }, false);
             DialogGUIButton visualStyleButton = new DialogGUIButton("Visual styles", delegate { new VisualStyleWindow().launch(); }, false);
             DialogGUIButton aboutButton = new DialogGUIButton("About", delegate { }, false);
-            componments.Add(new DialogGUIVerticalLayout(new DialogGUIBase[] { antennaSimButton, visualStyleButton, aboutButton }));
+            componments.Add(new DialogGUIVerticalLayout(new DialogGUIBase[] { groundStationButton, antennaSimButton, visualStyleButton, aboutButton }));
 
             return componments;
         }
