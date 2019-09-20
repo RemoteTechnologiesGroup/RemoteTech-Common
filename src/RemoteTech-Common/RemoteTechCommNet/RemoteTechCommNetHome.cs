@@ -53,7 +53,8 @@ namespace RemoteTech.Common.RemoteTechCommNet
             groundStationHeadline = new GUIStyle(HighLogic.Skin.label)
             {
                 fontSize = 12,
-                normal = { textColor = Color.yellow }
+                normal = { textColor = Color.yellow },
+                alignment = TextAnchor.MiddleCenter
             };
 
             loadCompleted = true;
@@ -96,14 +97,16 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f || HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsFully)
                 return;
 
-            var position = PlanetariumCamera.Camera.WorldToScreenPoint(worldPos);
-            var groundStationRect = new Rect((position.x - 8), (Screen.height - position.y) - 8, 16, 16);
-
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(nodeTransform.transform.position, this.body))
                 return;
 
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.0f && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
                 return;
+
+            //maths calculations
+            var screenPosition = PlanetariumCamera.Camera.WorldToScreenPoint(worldPos);
+            var centerPosition = new Vector3(screenPosition.x - 8, (Screen.height - screenPosition.y) - 8);
+            var groundStationRect = new Rect(centerPosition.x, centerPosition.y, 16, 16);
 
             //draw the dot
             var previousColor = GUI.color;
@@ -115,23 +118,22 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().ShowMouseOverInfoGroundStations && UiUtils.ContainsMouse(groundStationRect))
             {
                 //Ground Station Name
-                var headlineRect = groundStationRect;
+                var headlineRect = new Rect();
                 var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
-                headlineRect.x -= nameDim.x / 2 - 5;
-                headlineRect.y -= nameDim.y + 5;
+                headlineRect.x = centerPosition.x - nameDim.x / 2;
+                headlineRect.y = centerPosition.y - nameDim.y;
                 headlineRect.width = nameDim.x;
                 headlineRect.height = nameDim.y;
                 GUI.Label(headlineRect, this.nodeName, RemoteTechCommNetHome.groundStationHeadline);
 
                 //Ground Station Range Info
-                GUIContent rangeContent = new GUIContent(stationInfoString);
-                Vector2 rangeDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(rangeContent);
-                Rect rangeRect = groundStationRect;
-                rangeRect.x -= rangeDim.x / 2 - 5;
-                rangeRect.y += rangeDim.y - 5;
+                var rangeDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(stationInfoString));
+                var rangeRect = new Rect();
+                rangeRect.x = centerPosition.x - rangeDim.x / 2;
+                rangeRect.y = centerPosition.y + 25; //move out of mouse cursor
                 rangeRect.width = rangeDim.x;
                 rangeRect.height = rangeDim.y;
-                GUI.Label(rangeRect, rangeContent, RemoteTechCommNetHome.groundStationHeadline);
+                GUI.Label(rangeRect, stationInfoString, RemoteTechCommNetHome.groundStationHeadline);
             }
         }
 
