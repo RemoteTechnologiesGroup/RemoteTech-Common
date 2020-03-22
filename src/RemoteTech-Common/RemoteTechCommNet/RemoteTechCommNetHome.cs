@@ -37,6 +37,14 @@ namespace RemoteTech.Common.RemoteTechCommNet
             set { this.OptionalName = value; }
         }
 
+        /// <summary>
+        /// Call the stock OnNetworkInitialized() to be added to CommNetNetwork as node
+        /// </summary>
+        protected override void OnNetworkInitialized()
+        {
+            base.OnNetworkInitialized();
+        }
+
         public void copyOf(CommNetHome stockHome)
         {
             Logging.Info("CommNet Home '{0}' added", stockHome.nodeName);

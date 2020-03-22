@@ -37,6 +37,12 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
             */
 
+            // disconnect connection between "itself"
+            if (AreSame(a, b))
+            {
+                this.Disconnect(a, b, true);
+            }
+
             return base.SetNodeConnection(a, b);
         }
 

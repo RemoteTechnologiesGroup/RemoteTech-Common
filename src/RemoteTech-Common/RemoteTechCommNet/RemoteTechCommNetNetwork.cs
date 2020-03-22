@@ -7,12 +7,6 @@ namespace RemoteTech.Common.RemoteTechCommNet
     /// </summary>
     public class RemoteTechCommNetNetwork : CommNetNetwork
     {
-        public static new RemoteTechCommNetNetwork Instance
-        {
-            get;
-            protected set;
-        }
-
         protected override void Awake()
         {
             Logging.Info("CommNet Network booting");

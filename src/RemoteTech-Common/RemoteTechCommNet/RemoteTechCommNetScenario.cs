@@ -4,6 +4,7 @@ using RemoteTech.Common.RangeModels;
 using RemoteTech.Common.Utils;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace RemoteTech.Common.RemoteTechCommNet
@@ -11,7 +12,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
     /// <summary>
     /// This class is the key that allows to break into and customise KSP's CommNet. This is possibly the secondary model in the Model–view–controller sense
     /// </summary>
-    [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR)]
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames, GameScenes.FLIGHT, GameScenes.TRACKSTATION, GameScenes.SPACECENTER, GameScenes.EDITOR, GameScenes.SPACECENTER)]
     public class RemoteTechCommNetScenario : CommNetScenario
     {
         /* Note:
@@ -125,6 +126,20 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 var customBody = bodies[i].gameObject.AddComponent(typeof(RemoteTechCommNetBody)) as RemoteTechCommNetBody;
                 customBody.copyOf(bodies[i]);
                 UnityEngine.Object.Destroy(bodies[i]);
+            }
+
+            //Imitate stock CommNetScenario.Instance in order to run certain stock functionalities
+            //Comment: Vessel.GetControlLevel() has the check on CommNetScenario.Instance != null before calling vessel.connection.GetControlLevel()
+            PropertyInfo property = typeof(CommNetScenario).GetProperty("Instance");
+            property.DeclaringType.GetProperty("Instance");
+            property.SetValue(CommNetScenario.Instance, this, BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
+
+            //Imitate stock CommNetNetwork.Instance
+            if (customNetwork != null && !(CommNetNetwork.Instance is RemoteTechCommNetNetwork))
+            {
+                PropertyInfo property2 = typeof(CommNetNetwork).GetProperty("Instance");
+                property2.DeclaringType.GetProperty("Instance");
+                property2.SetValue(CommNetNetwork.Instance, customNetwork, BindingFlags.NonPublic | BindingFlags.Instance, null, null, null);
             }
 
             Logging.Info("RemoteTech Scenario loading done!");
