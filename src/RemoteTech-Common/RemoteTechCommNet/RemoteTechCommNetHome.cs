@@ -17,8 +17,6 @@ namespace RemoteTech.Common.RemoteTechCommNet
         private static readonly Texture2D L3MarkTexture = UiUtils.LoadTexture("GroundStationL3Mark");
         private static GUIStyle groundStationHeadline;
 
-        private bool loadCompleted = false;
-
         private string stationInfoString = "";
         private Texture2D stationTexture;
 
@@ -26,10 +24,15 @@ namespace RemoteTech.Common.RemoteTechCommNet
         [Persistent] public Color Color = new Color(1.0f, 0.0f, 0.0f, 1f); //RemoteTechCommNetScenario.Instance.GroundStationDotColor; //issue: RemoteTechCommNetScenario.Instance not initialised yet
         [Persistent] protected string OptionalName = "";
         [Persistent] public short TechLevel = 0;
+        [Persistent] public bool OverrideLatLongAlt = false;
+        [Persistent] public double CustomLatitude = 0.0;
+        [Persistent] public double CustomLongitude = 0.0;
+        [Persistent] public double CustomAltitude = 0.0;
+        [Persistent] public string CustomCelestialBody = "";
 
-        public double altitude { get { return this.alt; } }
-        public double latitude { get { return this.lat; } }
-        public double longitude { get { return this.lon; } }
+        public double altitude { get { return this.alt; } set { this.alt = value; } }
+        public double latitude { get { return this.lat; } set { this.lat = value; } }
+        public double longitude { get { return this.lon; } set { this.lon = value; } }
         public CommNode commNode { get { return this.comm; } }
         public string stationName
         {
@@ -38,16 +41,11 @@ namespace RemoteTech.Common.RemoteTechCommNet
         }
 
         /// <summary>
-        /// Call the stock OnNetworkInitialized() to be added to CommNetNetwork as node
+        /// Copy details of stock ground station to this object
         /// </summary>
-        protected override void OnNetworkInitialized()
-        {
-            base.OnNetworkInitialized();
-        }
-
         public void copyOf(CommNetHome stockHome)
         {
-            Logging.Info("CommNet Home '{0}' added", stockHome.nodeName);
+            Logging.Info("Stock CommNet Home '{0}' added", stockHome.nodeName);
 
             this.ID = stockHome.nodeName;
             this.nodeName = stockHome.nodeName;
@@ -57,32 +55,44 @@ namespace RemoteTech.Common.RemoteTechCommNet
             this.body = stockHome.GetComponentInParent<CelestialBody>();
 
             //comm, lat, alt, lon are initialised by CreateNode() later
-
-            groundStationHeadline = new GUIStyle(HighLogic.Skin.label)
-            {
-                fontSize = 12,
-                normal = { textColor = Color.yellow },
-                alignment = TextAnchor.MiddleCenter
-            };
-
-            loadCompleted = true;
         }
 
-        protected override void CreateNode()
-        {
-            base.CreateNode();
-
-            if (this.isKSC)
-            {
-                this.TechLevel = (short)((2 * ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) + 1);
-            }
-
-            this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
-        }
-
+        /// <summary>
+        /// Change how Start() runs
+        /// </summary>
         protected override void Start()
         {
-            base.Start();
+            if(groundStationHeadline == null)
+            {
+                groundStationHeadline = new GUIStyle(HighLogic.Skin.label)
+                {
+                    fontSize = 12,
+                    normal = { textColor = Color.yellow },
+                    alignment = TextAnchor.MiddleCenter
+                };
+            }
+
+            this.body = (this.CustomCelestialBody.Length > 0) ? FlightGlobals.Bodies.Find(x => x.name.Equals(this.CustomCelestialBody)) : base.GetComponentInParent<CelestialBody>();
+
+            if (this.nodeTransform == null)
+            {
+                this.nodeTransform = base.nodeTransform;
+            }
+
+            if (CommNetNetwork.Initialized)
+            {
+                this.OnNetworkInitialized();
+            }
+
+            GameEvents.CommNet.OnNetworkInitialized.Add(new EventVoid.OnEvent(this.OnNetworkInitialized));
+
+            if (this.OverrideLatLongAlt)
+            {
+                this.latitude = this.CustomLatitude;
+                this.longitude = this.CustomLongitude;
+                this.altitude = this.CustomAltitude;
+            }
+
             this.refresh();
         }
 
@@ -91,7 +101,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         /// </summary>
         public void OnGUI()
         {
-            if (GameUtil.IsGameScenario || !loadCompleted)
+            if (GameUtil.IsGameScenario)
                 return;
 
             if (!(HighLogic.LoadedScene == GameScenes.FLIGHT || HighLogic.LoadedScene == GameScenes.TRACKSTATION))
@@ -100,15 +110,16 @@ namespace RemoteTech.Common.RemoteTechCommNet
             if ((!HighLogic.CurrentGame.Parameters.CustomParams<CommNetParams>().enableGroundStations && !this.isKSC) || !MapView.MapIsEnabled || MapView.MapCamera == null)
                 return;
 
-            var worldPos = ScaledSpace.LocalToScaledSpace(nodeTransform.transform.position);
+            var worldPos = ScaledSpace.LocalToScaledSpace(this.comm.precisePosition);
 
             if (MapView.MapCamera.transform.InverseTransformPoint(worldPos).z < 0f || HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsFully)
                 return;
 
-            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(nodeTransform.transform.position, this.body))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().HideGroundStationsBehindBody && IsOccluded(this.comm.precisePosition, this.body))
                 return;
 
-            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.0f && !IsOccluded(nodeTransform.transform.position, this.body) && this.IsCamDistanceToWide(nodeTransform.transform.position))
+            if (HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DistanceToHideGroundStations > 0.0f &&
+                !IsOccluded(this.comm.precisePosition, this.body) && this.IsCamDistanceToWide(this.comm.precisePosition))
                 return;
 
             //maths calculations
@@ -118,7 +129,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
 
             //draw the dot
             var previousColor = GUI.color;
-            GUI.color = RemoteTechCommNetScenario.Instance.GroundStationDotColor;
+            GUI.color = this.Color;
             GUI.DrawTexture(groundStationRect, stationTexture, ScaleMode.ScaleToFit, true);
             GUI.color = previousColor;
 
@@ -127,12 +138,12 @@ namespace RemoteTech.Common.RemoteTechCommNet
             {
                 //Ground Station Name
                 var headlineRect = new Rect();
-                var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.nodeName));
+                var nameDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(this.stationName));
                 headlineRect.x = centerPosition.x - nameDim.x / 2;
                 headlineRect.y = centerPosition.y - nameDim.y;
                 headlineRect.width = nameDim.x;
                 headlineRect.height = nameDim.y;
-                GUI.Label(headlineRect, this.nodeName, RemoteTechCommNetHome.groundStationHeadline);
+                GUI.Label(headlineRect, this.stationName, RemoteTechCommNetHome.groundStationHeadline);
 
                 //Ground Station Range Info
                 var rangeDim = RemoteTechCommNetHome.groundStationHeadline.CalcSize(new GUIContent(stationInfoString));
@@ -183,7 +194,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
         }
 
         /// <summary>
-        /// Increment Tech Level Ground Station to max 3 and refresh the ground station
+        /// Increment Tech Level Ground Station to max 3
         /// </summary>
         public void incrementTechLevel()
         {
@@ -195,6 +206,51 @@ namespace RemoteTech.Common.RemoteTechCommNet
         }
 
         /// <summary>
+        /// Decrement Tech Level Ground Station to min 0
+        /// </summary>
+        public void decrementTechLevel()
+        {
+            if (this.TechLevel > 0 && !this.isKSC)
+            {
+                this.TechLevel--;
+                refresh();
+            }
+        }
+
+        /// <summary>
+        /// Set Tech Level Ground Station
+        /// </summary>
+        public void setTechLevel(short level)
+        {
+            if (level >= 0 && level <= 3 && !this.isKSC)
+            {
+                this.TechLevel = level;
+                refresh();
+            }
+        }
+
+        /// <summary>
+        /// Update lat and long of celestial body
+        /// </summary>
+        public void setLatLongCoords(double lat, double lon, bool persistent = true)
+        {
+            this.OverrideLatLongAlt = persistent;
+            this.latitude = this.CustomLatitude = lat;
+            this.longitude = this.CustomLongitude = lon;
+            refresh();
+        }
+
+        /// <summary>
+        /// Update altitude on celestial body
+        /// </summary>
+        public void setAltitude(double alt, bool persistent = false)
+        {
+            this.OverrideLatLongAlt = persistent;
+            this.altitude = this.CustomAltitude = alt;
+            refresh();
+        }
+
+        /// <summary>
         /// Apply the changes from persistent.sfs
         /// </summary>
         public void applySavedChanges(RemoteTechCommNetHome stationSnapshot)
@@ -202,6 +258,11 @@ namespace RemoteTech.Common.RemoteTechCommNet
             this.Color = stationSnapshot.Color;
             this.OptionalName = stationSnapshot.OptionalName;
             this.TechLevel = stationSnapshot.TechLevel;
+            this.OverrideLatLongAlt = stationSnapshot.OverrideLatLongAlt;
+            this.CustomLatitude = stationSnapshot.CustomLatitude;
+            this.CustomLongitude = stationSnapshot.CustomLongitude;
+            this.CustomAltitude = stationSnapshot.CustomAltitude;
+            this.CustomCelestialBody = stationSnapshot.CustomCelestialBody;
         }
 
         /// <summary>
@@ -245,6 +306,9 @@ namespace RemoteTech.Common.RemoteTechCommNet
                     stationTexture = L3MarkTexture;
                     break;
             }
+
+            // Update position on celestial body
+            this.comm.precisePosition = this.body.GetWorldSurfacePosition(this.latitude, this.longitude, this.altitude);
         }
 
         /// <summary>
@@ -272,6 +336,19 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
             
             return power * ((double)HighLogic.CurrentGame.Parameters.CustomParams<CommNetParams>().DSNModifier);
+        }
+
+        /// <summary>
+        /// Overrode to correct the error of assigning position to comm's position (no setter)
+        /// </summary>
+        protected override void Update()
+        {
+            if (this.comm != null)
+            {
+                //this.comm.position has no setter
+                this.comm.transform.position = this.comm.precisePosition;
+                this.nodeTransform.position = this.comm.precisePosition;
+            }
         }
     }
 }

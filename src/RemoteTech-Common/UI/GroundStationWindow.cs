@@ -4,6 +4,8 @@ using RemoteTech.Common.UI.DialogGUI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using TMPro;
 
 namespace RemoteTech.Common.UI
 {
@@ -15,7 +17,7 @@ namespace RemoteTech.Common.UI
                                             "Ground Stations",
                                             0.5f,
                                             0.5f,
-                                            450,
+                                            600,
                                             300,
                                             new DialogOptions[] { })
         {
@@ -51,10 +53,26 @@ namespace RemoteTech.Common.UI
         {
             int money = thisStation.TechLevel >= 3 ? 0 : ps.GroundStationUpgradeableCosts[thisStation.TechLevel];
 
+            DialogGUIVerticalLayout contentGroup = new DialogGUIVerticalLayout();
+
             DialogGUILabel label = new DialogGUILabel(string.Format("Name: {0}, Tech Level: {1}, Upgrade Cost: {2} Funding", thisStation.stationName, thisStation.TechLevel, money));
-            DialogGUIButton upgradeButton = new DialogGUIButton("+", delegate { thisStation.incrementTechLevel(); }, false);
-            DialogGUIHorizontalLayout groundStationGroup = new DialogGUIHorizontalLayout(new DialogGUIBase[] { label, upgradeButton});
-            return groundStationGroup;
+            DialogGUIButton upgradeButton = new DialogGUIButton("+", delegate { thisStation.incrementTechLevel(); }, false); //cost fund to upgrade
+            DialogGUIButton downgradeButton = new DialogGUIButton("-", delegate { thisStation.decrementTechLevel(); }, false); // cost what to downgrade?
+            DialogGUIHorizontalLayout groundStationGroup = new DialogGUIHorizontalLayout(new DialogGUIBase[] { label, upgradeButton, downgradeButton });
+            contentGroup.AddChild(groundStationGroup);
+
+            DialogGUITextInput latField = new DialogGUITextInput("", false, 6, a);
+            DialogGUITextInput longField = new DialogGUITextInput("", false, 6, a);
+            DialogGUIButton locationButton = new DialogGUIButton("Edit", delegate { thisStation.setLatLongCoords(Double.Parse(latField.uiItem.GetComponent<TMP_InputField>().text), Double.Parse(longField.uiItem.GetComponent<TMP_InputField>().text)); }, false);
+            DialogGUIHorizontalLayout locationGroup = new DialogGUIHorizontalLayout(new DialogGUIBase[] { latField, longField, locationButton });
+            contentGroup.AddChild(locationGroup);
+
+            return new DialogGUIHorizontalLayout(new DialogGUIBase[] { contentGroup });
+        }
+
+        private string a(string arg)
+        {
+            return arg;
         }
     }
 }
