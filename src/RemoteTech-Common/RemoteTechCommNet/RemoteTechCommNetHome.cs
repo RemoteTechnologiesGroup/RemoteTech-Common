@@ -350,10 +350,19 @@ namespace RemoteTech.Common.RemoteTechCommNet
         {
             if (this.comm != null)
             {
+                this.comm.precisePosition = this.body.GetWorldSurfacePosition(this.lat, this.lon, this.alt);
                 //this.comm.position has no setter
                 this.comm.transform.position = this.comm.precisePosition;
                 this.nodeTransform.position = this.comm.precisePosition;
             }
+        }
+
+        /// <summary>
+        /// Overrode to remove unnecessary position calculation that is done in Update()
+        /// </summary>
+        protected override void OnNetworkPreUpdate()
+        {
+            //do nothing
         }
     }
 }
