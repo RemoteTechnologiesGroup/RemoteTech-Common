@@ -1,10 +1,9 @@
-﻿using System;
+﻿using RemoteTech.Common.RemoteTechCommNet;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using UnityEngine;
 
 namespace RemoteTech.Common
 {
@@ -83,6 +82,8 @@ namespace RemoteTech.Common
 
         [GameParameters.CustomParameterUI("Planets and moons will block a signal", toolTip = "ON: Antennas and dishes will not need line-of-sight to maintain a connection, as long as they have adequate range and power.\nOFF: Antennas and dishes need line-of-sight to maintain a connection.")]
         public bool EnforceLineOfSight = true;
+
+        public List<RemoteTechCommNetHome> DefaultGroundStations = new List<RemoteTechCommNetHome>();
 
         public override string DisplaySection
         {
@@ -173,6 +174,15 @@ namespace RemoteTech.Common
                     if (!ConfigNode.LoadObjectFromConfig(this, cfgs[i].config))
                     {
                         Logging.Error("Unable to load RemoteTechCommon_Settings.cfg");
+                    }
+
+                    //Load default ground station parameters
+                    ConfigNode[] stationNodes = cfgs[i].config.GetNode("GroundStations").GetNodes();
+                    for (int j = 0; j < stationNodes.Length; j++)
+                    {
+                        RemoteTechCommNetHome dummyGroundStation = new RemoteTechCommNetHome();
+                        ConfigNode.LoadObjectFromConfig(dummyGroundStation, stationNodes[j]);
+                        DefaultGroundStations.Add(dummyGroundStation);
                     }
                     break;
                 }

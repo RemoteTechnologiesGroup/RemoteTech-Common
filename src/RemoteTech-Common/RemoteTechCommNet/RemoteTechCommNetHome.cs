@@ -41,6 +41,11 @@ namespace RemoteTech.Common.RemoteTechCommNet
         }
 
         /// <summary>
+        /// Empty constructor for ConfigNode.LoadObjectFromConfig()
+        /// </summary>
+        public RemoteTechCommNetHome() { }
+
+        /// <summary>
         /// Copy details of stock ground station to this object
         /// </summary>
         public void copyOf(CommNetHome stockHome)
@@ -271,13 +276,13 @@ namespace RemoteTech.Common.RemoteTechCommNet
         protected void refresh()
         {
             // Obtain Tech Level of Tracking Station in KCS
-            //if (this.isKSC)
-            //{
-            //    this.TechLevel = (short)((2 * ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) + 1);
-            //}
+            if (this.isKSC)
+            {
+                this.TechLevel = (short)((2 * ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.TrackingStation)) + 1);
+            }
 
             // Update power of ground station
-            if(this.comm != null)
+            if (this.comm != null)
             {
                 this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
             }

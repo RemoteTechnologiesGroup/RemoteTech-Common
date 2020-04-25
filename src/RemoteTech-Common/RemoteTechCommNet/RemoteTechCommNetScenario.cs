@@ -198,7 +198,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
                     if (stationNodes.Length < 1) // missing ground-station list
                     {
                         Logging.Error("The 'GroundStations' node is malformed! Reverted to the default list of ground stations.");
-                        //do nothing since KSP provides this default list
+                        persistentGroundStations = HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DefaultGroundStations;
                     }
                     else
                     {
@@ -214,7 +214,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
                 else
                 {
                     Logging.Info("The 'GroundStations' node is not found. The default list of ground stations is loaded from KSP's data.");
-                    //do nothing since KSP provides this default list
+                    persistentGroundStations = HighLogic.CurrentGame.Parameters.CustomParams<RemoteTechCommonParams>().DefaultGroundStations;
                 }
 
                 //Other variables
