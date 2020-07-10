@@ -275,6 +275,19 @@ namespace RemoteTech.Common.RemoteTechCommNet
         /// </summary>
         protected void refresh()
         {
+            if (this.comm == null)
+            {
+                if (!HighLogic.CurrentGame.Parameters.CustomParams<CommNetParams>().enableGroundStations)
+                {
+                    Logging.Info("Ground station '{0}': CommNet option of enabling ground stations is disabled", this.ID);
+                }
+                else
+                {
+                    Logging.Error("Ground station '{0}': Null CommNode, likely due to a third-party CommNet mod", this.ID);
+                }
+                return;
+            }
+            
             // Obtain Tech Level of Tracking Station in KCS
             if (this.isKSC)
             {
@@ -282,10 +295,7 @@ namespace RemoteTech.Common.RemoteTechCommNet
             }
 
             // Update power of ground station
-            if (this.comm != null)
-            {
-                this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
-            }
+            this.comm.antennaRelay.Update(GetDSNRange(this.TechLevel), GameVariables.Instance.GetDSNRangeCurve(), false);
 
             // Generate ground station information
             stationInfoString = (this.TechLevel == 0) ? "Build a ground station" :
